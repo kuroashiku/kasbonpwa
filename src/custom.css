@@ -1,0 +1,47 @@
+.h-screen-adapt {
+  height: 100vh;
+}
+
+.w-img-upload {
+  width: calc(100vw - 4rem);
+}
+
+.h-item-filter {
+  height: calc(100vh - 250px);
+}
+
+@media screen and (min-width: 720px) {
+  .lg-zoom {
+    zoom: 1.25;
+    -ms-zoom: 1.25;
+    -webkit-zoom: 1.25;
+  }
+  .h-screen-adapt {
+    height: 80vh;
+  }
+  .h-item-filter {
+    height: calc(80vh - 175px);
+  }
+  .w-img-upload {
+    width: calc(80vw - 4rem);
+  }
+}
+
+.rdp-day_selected,
+.rdp-day_selected:focus-visible,
+.rdp-day_selected:hover {
+  background-color: teal !important;
+}
+
+@media print {
+  .no-print {
+    display: none;
+  }
+}
+
+@media screen and (min-width: 1346px) {
+  body {
+    max-width: 60%;
+    margin: 0 auto;
+  }
+}
