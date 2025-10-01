@@ -71,6 +71,10 @@ export const topic = Object.freeze({
         receive: {
             id: 11,
             route: "/receive-order"
+        },
+        add_budget: {
+            id: 30,
+            route: "/add-budget"
         }
     },
     setting: {
@@ -111,6 +115,10 @@ export const topic = Object.freeze({
             id: 25,
             route: "/qris"
         },
+        password: {
+            id: 31,
+            route: "/password"
+        },
     },
     login: {
         id: 22,
@@ -127,5 +135,13 @@ export const topic = Object.freeze({
     shift: {
         id: 29,
         route: "/shift",
+    },
+    privasi: {
+        id: 99,
+        route: "/#/privasi",
+    },
+    termservice: {
+        id: 98,
+        route: "/#/termservice",
     }
 });

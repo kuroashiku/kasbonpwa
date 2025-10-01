@@ -5,6 +5,7 @@ import { AdjustmentsVerticalIcon, Bars3Icon } from "@heroicons/react/24/outline"
 import FilterChips from "../../lib/FilterChips";
 import { AppContext } from "../../AppContext";
 import { getStokOpname } from "../../api/StokOpname";
+import { getItems, categoriesItem } from "../../api/Item";
 import { StokOpnameListModel } from "../../model/stokopname";
 import { dictionary } from "../../constant/appDictionary";
 import StokOpnameEdit from "./StokOpnameEdit";
@@ -28,6 +29,8 @@ export default function StokOpnameList() {
   const [page, setPage] = useState(1);
   const [openFilter, setOpenFilter] = useState(false);
   const [clearFilter, setClearFilter] = useState(false);
+  const [closeDialog, setCloseDialog] = useState(false);
+  const [categories, setCategories] = useState([]);
   const openDrawerRight = () => setOpenFilter(true);
 
   useEffect(() => {
@@ -40,9 +43,22 @@ export default function StokOpnameList() {
     if (page > 1) initData();
   }, [page]);
 
+  useEffect(() => {
+    const init = async () => {
+      setCategories([]);
+      const { data, error } = await categoriesItem({
+        lok_id: cookies.lok_id,
+      });
+      if (!error) {
+        setCategories(data);
+      }
+    };
+    init();
+  }, []);
+
   const handleResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setItems(data);
     }
@@ -50,7 +66,7 @@ export default function StokOpnameList() {
 
   const handleAppendResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setItems([...items, ...data]);
     }
@@ -202,6 +218,7 @@ export default function StokOpnameList() {
   }, [items, navbarRef]);
 
   const handleSelect = (item = StokOpnameListModel()) => {
+    setCloseDialog(false);
     item.sop_itm_id = item.itm_id;
     item.sop_lok_id = cookies.lok_id;
     item.sop_id = -1;
@@ -215,7 +232,7 @@ export default function StokOpnameList() {
       : null;
     setSubmitCount(submitCount + 1);
   };
-  if (selectedItem && selectedItem.itm_id > 0) {
+  if (selectedItem && selectedItem.itm_id > 0 && !closeDialog) {
     return (
       <StokOpnameEdit
         item={selectedItem}
@@ -223,6 +240,7 @@ export default function StokOpnameList() {
         onSubmit={(input) => {
           setSubmitCount(submitCount + 1);
           setSelectedItem(input);
+          setCloseDialog(true);
         }}
         pakaistoklist={selectedItem.itm_pakaistok ? parseInt(selectedItem.itm_pakaistok) : 0}
       />
@@ -259,18 +277,28 @@ export default function StokOpnameList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={setKeyword} label={"Stock Opname"} />
+                <SearchNavbar onSearch={setKeyword} label={dictionary.search.stockopname[lang]} />
               </div>
               <IconButton size="md" variant="text" onClick={openDrawerRight}>
-                <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Filter
+                  </div>
+                </div>
               </IconButton>
             </div>
             {!filters.length ? (
               <Typography variant="small" color="gray" className="absolute right-14 bottom-1 text-xs italic">
-                Semua Kategori
+                {dictionary.filter.itemCategory.all[lang]}
               </Typography>
             ) : (
               <div className="px-2 pt-4">
@@ -281,12 +309,14 @@ export default function StokOpnameList() {
         </div>
       </div>
       <ItemFilter
-        open={openFilter}
-        onClose={() => setOpenFilter(false)}
-        onCheck={handleCheckFilter}
-        onClear={() => setClearFilter(!clearFilter)}
-        checkedIds={filters.map((i, index) => i.value)}
-      />
+          open={openFilter}
+          onClose={() => setOpenFilter(false)}
+          onCheck={handleCheckFilter}
+          onClear={() => setClearFilter(!clearFilter)}
+          checkedIds={filters.map((i, index) => i.value)}
+          refresh={false}
+          categories={categories}
+        />
     </Fragment>
   );
 }

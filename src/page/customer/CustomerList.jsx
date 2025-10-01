@@ -56,13 +56,13 @@ export default function CustomerList() {
         ? setOpen(!open)
         : setOpen(false);
       setCustomerById(item);
-      settxtTitle("Edit Customer");
+      settxtTitle("Edit "+dictionary.customer.sidebar[lang]);
       setMode(2);
     } else {
       setReadonly(true);
       setOpen(!open);
       setCustomerById(item);
-      settxtTitle("Detail Customer");
+      settxtTitle("Detail "+dictionary.customer.sidebar[lang]);
       setMode(1);
     }
   }
@@ -79,7 +79,7 @@ export default function CustomerList() {
   function handleAdd() {
     setCustomerById({ cus_com_id: cookies.com_id, cus_id: -1 });
     setReadonly(false);
-    settxtTitle("Tambah Customer");
+    settxtTitle(dictionary.universal.add[lang]+" "+dictionary.customer.sidebar[lang]);
     setMode(3);
     cookies.role_create.length == 0 && cookies.role_dst.length == 0
       ? setOpen(!open)
@@ -102,7 +102,7 @@ export default function CustomerList() {
     setItemDisplay(null);
     const { data, error } = await deleteCustomer({ cus_id: customerId });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
@@ -110,7 +110,7 @@ export default function CustomerList() {
       setCustomerId(-1);
       const { data, error } = await getCustomers({ com_id: cookies.com_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setCustomers(data);
       }
@@ -122,14 +122,14 @@ export default function CustomerList() {
     setItemDisplay(null);
     const { data, error } = await saveCustomer(customerById);
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       setCustomers([]);
       const { data, error } = await getCustomers({ com_id: cookies.com_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setCustomers(data);
       }
@@ -140,7 +140,7 @@ export default function CustomerList() {
   useEffect(() => {
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setCustomers(data);
       }
@@ -182,10 +182,15 @@ export default function CustomerList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={handleFilter} value={keyword} label={"Pelanggan"} />
+                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.customer[lang]} />
               </div>
             </div>
           </Navbar>
@@ -232,7 +237,7 @@ export default function CustomerList() {
             <div className="mb-4">
               <InputSimple
                 value={customerById.cus_nama}
-                label="Nama"
+                label={dictionary.dialog.customer.name[lang]}
                 name="cus_nama"
                 onChange={handleChange}
                 disabled={readonly}
@@ -242,7 +247,7 @@ export default function CustomerList() {
             <div className="mb-4">
               <InputSimple
                 value={customerById.cus_wa}
-                label="Nomor WA"
+                label={dictionary.dialog.customer.wa[lang]}
                 name="cus_wa"
                 onChange={handleChange}
                 disabled={readonly}
@@ -252,7 +257,7 @@ export default function CustomerList() {
           </DialogBody>
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
-              Batal
+              {dictionary.universal.cancel[lang]}
             </Button>
             <Button
               variant="gradient"
@@ -260,7 +265,7 @@ export default function CustomerList() {
               onClick={mode <= 1 ? () => handleNewOpen(customerById.cus_id) : saveData}
               className="w-full flex-1"
             >
-              <span>{mode <= 1 ? "Delete" : "Confirm"}</span>
+              <span>{mode <= 1 ? dictionary.universal.delete[lang] : dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -268,16 +273,16 @@ export default function CustomerList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Customer <span className="font-semibold">{customerById.cus_nama}</span> akan dihapus. Apakah anda yakin?
+              {dictionary.customer.sidebar[lang]} {dictionary.universal.withname[lang]} <span className="font-semibold">{customerById.cus_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

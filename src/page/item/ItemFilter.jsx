@@ -4,8 +4,7 @@ import { AdjustmentsVerticalIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useContext } from "react";
 import { AppContext } from "../../AppContext";
-import { categoriesItem } from "../../api/Item";
-
+import { dictionary } from "../../constant/appDictionary";
 export default function ItemFilter({
   open = false,
   categories = [{}],
@@ -14,8 +13,7 @@ export default function ItemFilter({
   onClear = () => {},
   checkedIds = [],
 }) {
-  const { filters, cookies } = useContext(AppContext);
-  console.log(categories)
+  const { lang } = useContext(AppContext);
   return (
     <Drawer placement="right" open={open} onClose={onClose}>
       <div className="flex items-center justify-between p-3 border-b">
@@ -67,7 +65,7 @@ export default function ItemFilter({
       <div className="w-full flex flex-col gap-2 px-3">
         <Button color="teal" className="flex items-center justify-center w-full mt-5" onClick={() => onClose()}>
           <AdjustmentsVerticalIcon className="w-5 h-5 mr-2" />
-          Terapkan Filter
+          {dictionary.universal.apply[lang]} Filter
         </Button>
         <Button variant="gradient" color="red" onClick={onClear} disabled={checkedIds.length <= 0}>
           Hapus Filter

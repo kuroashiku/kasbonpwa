@@ -35,6 +35,8 @@ export default function StokOpnameEdit(
   const { lang, currency } = useContext(AppContext);
   const [loading, setLoading] = useState(false);
   const [currentTab, setCurrentTab] = useState("unit-1");
+  const [data, setData] = useState([]);
+  const [activeTab, setActiveTab] = useState("unit-1");
   const formik = useFormik({
     initialValues: StokOpnameListModel(),
     validationSchema: StokOpnameSchema,
@@ -64,8 +66,12 @@ export default function StokOpnameEdit(
         typeof item.itm_stok_satuan3 == "number" ? item.itm_stok_satuan3 : Number(item.itm_stok_satuan3),
     });
     const { pakaistoklist } = props;
+    let dataarr=[];
+    item.totalsatuan.map((_item,key) => {
+        dataarr.push({"label":"Satuan "+(key+1),"value":"unit-"+(key+1),"id":key})
+    });
+    setData(dataarr);
     setpakaistoknew(pakaistoklist);
-    console.log(pakaistoklist);
   }, []);
 
   const handlePakaiStok = useCallback(
@@ -80,37 +86,27 @@ export default function StokOpnameEdit(
   );
   const setStok = useCallback(
     (e) => {
+      let number=e.target.name.substr(e.target.name.length - 1)
+      formik.values['itm_stok_satuan'+number]=e.target.value;
+      formik.values['sop_qty_satuan'+number]=e.target.value;
       formik.setValues({
-        ...formik.values,
-        itm_stok: e.target.value,
-        sop_qty_satuan_1: e.target.value,
+        ...formik.values
       });
     },
     [formik.values]
   );
-  const setStokSatuan2 = useCallback(
+  const setKet = useCallback(
     (e) => {
+      let number=e.target.name.substr(e.target.name.length - 1)
+      formik.values['sop_ket_satuan'+number]=e.target.value;
       formik.setValues({
-        ...formik.values,
-        itm_stok_satuan2: e.target.value,
-        sop_qty_satuan_2: e.target.value,
-      });
-    },
-    [formik.values]
-  );
-  const setStokSatuan3 = useCallback(
-    (e) => {
-      formik.setValues({
-        ...formik.values,
-        itm_stok_satuan3: e.target.value,
-        sop_qty_satuan_3: e.target.value,
+        ...formik.values
       });
     },
     [formik.values]
   );
 
   // const handlePakaiStok = (value) => {
-  //     console.log(value)
   // };
   // useEffect(()=>{
   //     const {item} = props;
@@ -143,7 +139,7 @@ export default function StokOpnameEdit(
               Name="itm_pakaistok"
               value={pakaistoknew}
               onChange={handlePakaiStok}
-              label="Pakai Stok"
+              label={dictionary.universal.usestock[lang]}
             >
               {pakaistok.map((p) => (
                 <Option value={p.pak_value} key={p.pak_id}>
@@ -153,8 +149,72 @@ export default function StokOpnameEdit(
             </Select>
           </Typography>
         </div>
-
-        <div className="content px-3 pt-3 pb-20 rounded-t-3xl bg-gray-50 min-h-screen">
+        <div className="px-3 pt-3 pb-20 rounded-t-3xl bg-gray-50 min-h-screen">
+            <Tabs value={activeTab}>
+                <TabsHeader
+                    className="rounded-none border-b border-blue-gray-50 bg-transparent p-0"
+                    indicatorProps={{
+                    className:
+                        "bg-transparent border-b-2 border-gray-900 shadow-none rounded-none",
+                    }}
+                >
+                    {data.map(({ label, value }) => (
+                    <Tab
+                        key={value}
+                        value={value}
+                        onClick={() => setActiveTab(value)}
+                        className={activeTab === value ? "text-gray-900" : ""}
+                    >
+                        {label}
+                    </Tab>
+                    ))}
+                </TabsHeader>
+                <TabsBody>
+                    {data.map(({ value, id }) => (
+                    <TabPanel key={value} value={value}>
+                        <div className="mb-6">
+                            <InputSimple value={values['itm_satuan'+(id+1)]}
+                                label={dictionary.stock.uom.unitName[lang]}
+                                disabled
+                            />
+                        </div>
+                        <div className="mb-10">
+                            <InputSimple value={1}
+                                label={dictionary.stock.uom.coef[lang]}
+                                disabled
+                            />
+                        </div>
+                        <div className="mb-10">
+                          {console.log(values)}
+                            <InputMoney value={values['itm_stok_satuan'+(id+1)]}
+                                currency={currency}
+                                label={dictionary.stock.uom.stock[lang]}
+                                disabled
+                            />
+                        </div>
+                        <div className="mb-10">
+                            <InputMoney value={values['sop_qty_satuan'+(id+1)]}
+                                label={dictionary.stock.uom.stock[lang]}
+                                name={`sop_qty_satuan${id+1}`}
+                                onChange={setStok}
+                                error={errors['sop_qty_satuan'+(id+1)]}
+                            />
+                        </div>
+                        <div className="mb-10">
+                            <InputSimple value={values['sop_ket_satuan_'+(id+1)]}
+                                currency={currency}
+                                label={dictionary.stock.uom.note[lang]}
+                                name={`sop_ket_satuan_${id+1}`}
+                                onChange={setKet}
+                                error={errors['sop_ket_satuan_'+(id+1)]}
+                            />
+                        </div>
+                    </TabPanel>
+                    ))}
+                </TabsBody>
+            </Tabs>
+        </div>
+        {/* <div className="content px-3 pt-3 pb-20 rounded-t-3xl bg-gray-50 min-h-screen">
           <Tabs value={currentTab}>
             <TabsHeader className="bg-teal-500">
               <Tab key={1} value="unit-1">
@@ -271,7 +331,7 @@ export default function StokOpnameEdit(
               </TabPanel>
             </TabsBody>
           </Tabs>
-        </div>
+        </div> */}
 
         <div className="action-area fixed bottom-3 inset-x-4 z-20">
           <Button

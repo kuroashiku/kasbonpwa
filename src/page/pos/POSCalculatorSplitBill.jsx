@@ -233,11 +233,11 @@ export default function POSCalculatorSplitBill() {
 						<Input
 							color="teal"
 							value={bill[splitCount]}
-							label="Info Split Bill"
+							label={dictionary.cashier.pos.splitbillinfo[lang]}
 							disabled={true}
 						/>
 						<Dialog open={piutangOpen}>
-							<DialogHeader>Tanggal Jatuh Tempo Piutang</DialogHeader>
+							<DialogHeader>{dictionary.dialogheader.duedateofcredit[lang]}</DialogHeader>
 							<DialogBody>
 								<Card className="my-0 mx-auto w-8/12">
 									<CardBody>

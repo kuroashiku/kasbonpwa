@@ -45,12 +45,32 @@ export default function UOMItemScrollSm({
           <div className="w-[90%] whitespace-nowrap overflow-hidden text-ellipsis font-semibold">{i.itm_nama}</div>
           <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-orange-100 rounded-md">{i.itm_kode}</div>
           <div className="flex items-center gap-1">
-            {uoms.length > 0 &&
-              uoms.map((uom, i) => (
-                <div key={i} className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
-                  {SetItemUnit(uom.toUpperCase())}
+            <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-green-100 rounded-md">
+              {i.itm_pakaistok == "1" ? Number(i.itm_stok) : "available"}
+            </div>
+            <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+              {SetItemUnit(i.itm_satuan1?i.itm_satuan1.toUpperCase():null)}
+            </div>
+            {i.itm_satuan2 && (
+              <div className="flex gap-1">
+                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-green-100 rounded-md">
+                  {Number(i.itm_stok_satuan2)}
                 </div>
-              ))}
+                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+                  {SetItemUnit(i.itm_satuan2?i.itm_satuan2.toUpperCase():null)}
+                </div>
+              </div>
+            )}
+            {i.itm_satuan3 && (
+              <div className="flex gap-1">
+                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-green-100 rounded-md">
+                  {Number(i.itm_stok_satuan3)}
+                </div>
+                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+                  {SetItemUnit(i.itm_satuan3?i.itm_satuan3.toUpperCase():null)}
+                </div>
+              </div>
+            )}
           </div>
         </div>
       </ListItem>

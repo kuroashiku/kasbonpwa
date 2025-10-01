@@ -1,12 +1,13 @@
-import { useContext, useEffect, useState } from "react";
+import { useContext, useEffect, useState, useCallback } from "react";
 import logo from "/logo.svg";
 import { IconButton, Typography, List, ListItem, ListItemPrefix, ListItemSuffix, Chip, Accordion,
-	AccordionHeader, AccordionBody, Drawer, Card } from "@material-tailwind/react";
+	AccordionHeader, AccordionBody, Drawer, Card, Button, Dialog, DialogHeader, DialogBody, DialogFooter, Input, } from "@material-tailwind/react";
 import { BeakerIcon, PowerIcon, Squares2X2Icon, WrenchScrewdriverIcon, ReceiptPercentIcon, 
-	CreditCardIcon,QrCodeIcon} from "@heroicons/react/24/solid";
+	CreditCardIcon,QrCodeIcon, ShieldCheckIcon} from "@heroicons/react/24/solid";
+import { savePassword, login } from "../api/Login";
 import { ChevronDownIcon, DocumentTextIcon, UserGroupIcon, XMarkIcon, InboxStackIcon, CalculatorIcon,
 	TruckIcon, Cog6ToothIcon, ClipboardDocumentIcon, Square3Stack3DIcon, UserIcon, ShoppingBagIcon, 
-	CubeIcon, CubeTransparentIcon, NewspaperIcon, ClockIcon
+	CubeIcon, CubeTransparentIcon, NewspaperIcon, ClockIcon, BanknotesIcon, UsersIcon
 } from "@heroicons/react/24/outline";
 import { AppContext } from "../AppContext";
 import { dictionary } from "../constant/appDictionary";
@@ -15,10 +16,11 @@ import { Link,useNavigate } from "react-router-dom";
 import { getCountCustomers } from "../api/Customer";
 import { getCountSupplier } from "../api/Supplier";
 import { differenceInHours} from "date-fns";
-
+import { lowerCase } from "lodash";
+import { formatSentenceCase } from "../util/formatter";
 export function LayoutAuthenticated({ children }) {
 	const { isMenuOpen, setMenuOpen, lang, countCustomer, countSupplier, setCountCustomer, setCountSupplier,
-		cookies, removeCookies, setItemsCheckout, setDiskonGlobal, setPajakGlobal } = useContext(AppContext);
+		cookies, removeCookies, setItemsCheckout, setDiskonGlobal, setPajakGlobal, setFilters } = useContext(AppContext);
 	const [openParentMenu, setOpenParentMenu] = useState(0);
 	const handleOpen = (value) => {
 		setOpenParentMenu(openParentMenu === value ? 0 : value);
@@ -103,7 +105,38 @@ export function LayoutAuthenticated({ children }) {
 		true:(cookies.role_read.findIndex(a=>a=='DIS')>= 0?
 		true:false))));
 	const [isAdmin] = 
-		useState(cookies.role_nama=="admin"?true:false);
+		useState(lowerCase(cookies.role_nama)=="admin"?true:false);
+	const [passwordOld, setPasswordOld] = useState(null);
+	const [passwordNew, setPasswordNew] = useState(null);
+	const [passwordKonfirmasi, setPasswordKonfirmasi] = useState(null);
+	const [openPassword, setOpenPassword] = useState(false);
+	const [openProfil, setOpenProfil] = useState(false);
+	const [isPasswordVisible, setIsPasswordVisible] = useState(false);
+	function togglePasswordVisibility() {
+		setIsPasswordVisible((prevState) => !prevState);
+	}
+	const validatePassword = useCallback(async () => {
+		const { data, error } = await login({
+			username: cookies.kas_nick,
+			password: passwordOld,
+		});
+		if (error) {
+			alert("Password lama salah");
+		} else {
+			const init = async () => {
+				const { data, error } = await savePassword({
+					kas_id: cookies.kas_id,
+					kas_password: passwordNew,
+				});
+				if (error) {
+					alert("Password gagal tersimpan");
+				} else {
+					setOpenPassword(false)
+				}
+			};
+			init();
+		}
+	},[passwordOld,passwordNew,cookies]);
 	useEffect(() => {
 		if (cookies) {
 			const init = async () => {
@@ -122,37 +155,41 @@ export function LayoutAuthenticated({ children }) {
 		}
 	}, [cookies]);
 
-	useEffect(
-		() => {
-			const intervalId = setInterval(() => {
-				let time_arr=(cookies.time_now).split(',')
-				const substract = differenceInHours(
-					new Date(),
-					new Date(time_arr[0], time_arr[1], time_arr[2], time_arr[3], time_arr[4], time_arr[5])
-				)
-				//console.log(substract)
-				if(parseInt(substract)>=parseInt(cookies.auto_logout)&&parseInt(cookies.auto_logout)!=0)
-				{
-					setMenuOpen(false);
-					setItemsCheckout([]);
-					setPajakGlobal(0);
-					setDiskonGlobal(0);
-					removeCookies("lok_id");
-					removeCookies("role_dst");
-					removeCookies("role_read");
-					navigate(topic.login.route);
-				}
-			}, 60000);
-			return () => {
-				clearInterval(intervalId)
-			}
-		} 
-	)
-
-	const openDrawer = () => {
-		return setMenuOpen(true);
-	};
-
+	// useEffect(
+	// 	() => {
+	// 		const intervalId = setInterval(() => {
+	// 			let time_arr=(cookies.time_now).split(',')
+				
+	// 			const substract = differenceInHours(
+	// 				new Date(),
+	// 				new Date(time_arr[0], time_arr[1], time_arr[2], time_arr[3], time_arr[4], time_arr[5])
+	// 			)
+	// 			//console.log(substract)
+	// 			if(parseInt(substract)>=parseInt(cookies.auto_logout)&&parseInt(cookies.auto_logout)!=0)
+	// 			{
+	// 				setMenuOpen(false);
+	// 				setItemsCheckout([]);
+	// 				setPajakGlobal(0);
+	// 				setDiskonGlobal(0);
+	// 				removeCookies("lok_id");
+	// 				removeCookies("role_dst");
+	// 				removeCookies("role_read");
+	// 				navigate(topic.login.route);
+	// 			}
+	// 		}, 60000);
+	// 		return () => {
+	// 			clearInterval(intervalId)
+	// 		}
+	// 	} 
+	// )
+	const handleInputChangePassword= (evt,type) =>{
+		if(type=='lama')
+		setPasswordOld(evt.target.value);
+		else if(type=='baru')
+		setPasswordNew(evt.target.value);
+		else
+		setPasswordKonfirmasi(evt.target.value);
+    };
 	const closeDrawer = () => setMenuOpen(false);
 
 	const clearCookies = () => {
@@ -161,6 +198,29 @@ export function LayoutAuthenticated({ children }) {
 		setPajakGlobal(0);
 		setDiskonGlobal(0);
 		removeCookies("lok_id");
+		removeCookies("com_id");
+		removeCookies("kas_id");
+		removeCookies("kas_nama");
+		removeCookies("max_draft");
+		removeCookies("scan_mode");
+		removeCookies("max_piutang");
+		removeCookies("auto_logout");
+		removeCookies("lok_type");
+		removeCookies("dp_0");
+		removeCookies("time_now");
+		removeCookies("resto_type");
+		removeCookies("role_read");
+		removeCookies("role_create");
+		removeCookies("role_update");
+		removeCookies("role_delete");
+		removeCookies("role_dst");
+		removeCookies("qris");
+		removeCookies("role_nama");
+		removeCookies("split_bill");
+		removeCookies("join_bill");
+		removeCookies("lok_id");
+		localStorage.removeItem("pos_item");
+		setFilters([]);
 	};
 
 	const { pathname } = window.location;
@@ -246,6 +306,15 @@ export function LayoutAuthenticated({ children }) {
 								</ListItem>
 							</Link>
 						) : null}
+						<Link to={topic.report.route} onClick={closeDrawer} 
+							className={isMasterTableAccess?"":"hidden"}>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<NewspaperIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{dictionary.report.sidebar[lang]}
+							</ListItem>
+						</Link>
 						<Link to={topic.supplier.route} onClick={closeDrawer} 
 							className={isSupplierAccess?"":"hidden"}
 						>
@@ -359,6 +428,16 @@ export function LayoutAuthenticated({ children }) {
 											{dictionary.purchasing.receive.sidebar[lang]}
 										</ListItem>
 									</Link>
+									<Link to={topic.purchasing.add_budget.route} onClick={closeDrawer}
+									
+									>
+										<ListItem  className="px-0">
+											<ListItemPrefix>
+												<BanknotesIcon strokeWidth={3} className="h-4 w-5" />
+											</ListItemPrefix>
+											{dictionary.purchasing.add_budget.sidebar[lang]}
+										</ListItem>
+									</Link>
 								</List>
 							</AccordionBody>
 						</Accordion>
@@ -428,16 +507,6 @@ export function LayoutAuthenticated({ children }) {
 											{dictionary.setting.discount.sidebar[lang]}
 										</ListItem>
 									</Link>
-									<Link to={topic.setting.user.route} onClick={closeDrawer}
-										className={isAdmin?"":"hidden"}
-									>
-										<ListItem className="px-0">
-											<ListItemPrefix>
-												<UserIcon strokeWidth={3} className="h-4 w-5" />
-											</ListItemPrefix>
-											{dictionary.setting.user_management.sidebar[lang]}
-										</ListItem>
-									</Link>
 									<Link to={topic.setting.qris.route} onClick={closeDrawer}>
 										<ListItem className="px-0">
 											<ListItemPrefix>
@@ -446,6 +515,24 @@ export function LayoutAuthenticated({ children }) {
 											{dictionary.setting.qris.sidebar[lang]}
 										</ListItem>
 									</Link>
+									<Link to={topic.setting.user.route} onClick={closeDrawer}
+										className={isAdmin?"":"hidden"}
+									>
+										<ListItem className="px-0">
+											<ListItemPrefix>
+												<UsersIcon strokeWidth={3} className="h-4 w-5" />
+											</ListItemPrefix>
+											{dictionary.setting.user_management.sidebar[lang]}
+										</ListItem>
+									</Link>
+									{/* <Link to={topic.setting.password.route} onClick={closeDrawer}> */}
+										<ListItem className="px-0" onClick={()=>setOpenPassword(true)}>
+											<ListItemPrefix>
+												<ShieldCheckIcon strokeWidth={3} className="h-4 w-5" />
+											</ListItemPrefix>
+											{dictionary.setting.password.sidebar[lang]}
+										</ListItem>
+									{/* </Link> */}
 									{/* <ListItem  className="px-0">
 										<ListItemPrefix>
 											<PrinterIcon strokeWidth={3} className="h-4 w-5" />
@@ -461,13 +548,13 @@ export function LayoutAuthenticated({ children }) {
 								</List>
 							</AccordionBody>
 						</Accordion>
-						<Link to={topic.report.route} onClick={closeDrawer}>
-							<ListItem className="px-0">
-								<ListItemPrefix>
-									<NewspaperIcon className="h-5 w-5" />
-								</ListItemPrefix>
-								{dictionary.report.sidebar[lang]}
-							</ListItem>
+						<Link>
+						<ListItem className="px-0 py-3" onClick={()=>setOpenProfil(true)}>
+							<ListItemPrefix>
+								<UserIcon className="h-5 w-5" />
+							</ListItemPrefix>
+							{dictionary.profil.sidebar[lang]}
+						</ListItem>
 						</Link>
 						<Link to={topic.login.route} onClick={clearCookies}>
 							<ListItem className="px-0">
@@ -480,6 +567,83 @@ export function LayoutAuthenticated({ children }) {
 					</List>
 				</Card>
 			</Drawer>
+			<Dialog open={openPassword} handler={()=>setOpenPassword(false)}>
+				<DialogHeader>{dictionary.dialogheader.changepassword[lang]}</DialogHeader>
+				<DialogBody>
+				<div className="mb-4">
+						<Input
+							label={dictionary.dialog.user.oldpassword[lang]}
+							color="teal"
+							onChange={(evt)=>handleInputChangePassword(evt, 'lama')}
+							type={isPasswordVisible ? "text" : "password"}
+						/>
+						<label className="flex items-center my-2">
+							<input
+								type="checkbox"
+								className="mr-2 w-4 h-4"
+								checked={isPasswordVisible}
+								onChange={togglePasswordVisibility}
+							/>
+							<span className="text-sm text-gray-600">Show password</span>
+						</label>
+						<Input
+							label={dictionary.dialog.user.newpassword[lang]}
+							color="teal"
+							onChange={(evt)=>handleInputChangePassword(evt, 'baru')}
+							type={isPasswordVisible ? "text" : "password"}
+						/>
+						<label className="flex items-center my-2">
+							<input
+								type="checkbox"
+								className="mr-2 w-4 h-4"
+								checked={isPasswordVisible}
+								onChange={togglePasswordVisibility}
+							/>
+							<span className="text-sm text-gray-600">Show password</span>
+						</label>
+						<Input
+							label={dictionary.dialog.user.passwordconfirmation[lang]}
+							color="teal"
+							onChange={(evt)=>handleInputChangePassword(evt, 'konfirmasi')}
+							type="password"
+						/>
+					</div>
+				</DialogBody>
+				<DialogFooter className="flex gap-3 justify-between">
+					<Button variant="gradient" color="red" onClick={() => setOpenPassword(false)} className="w-full flex-1">
+					<span>{dictionary.universal.cancel[lang]}</span>
+					</Button>
+					<Button variant="gradient" color="green" onClick={() =>validatePassword()} className="w-full flex-1">
+					<span>{dictionary.universal.save[lang]}</span>
+					</Button>
+				</DialogFooter>
+			</Dialog>
+			<Dialog open={openProfil} handler={()=>setOpenProfil(false)}>
+				<DialogHeader>{dictionary.dialogheader.profile[lang]}</DialogHeader>
+				<DialogBody>
+
+				<div className="grid grid-cols-2 mb-4">
+					{
+						cookies.lok_type?(
+							<div>
+								<div className="font-bold py-2">
+									Login/Nama
+								</div>
+								<div className="py-2">
+									{": "+cookies.kas_nick+" / "+formatSentenceCase(cookies.kas_nama)+(cookies.kas_owner?' ( Owner )':'')}
+								</div>
+								<div className="font-bold py-2">
+									App/Type
+								</div>
+								<div className="py-2">
+									{": KasBON / "+formatSentenceCase(cookies.lok_type)+" "+(cookies.lok_type=="resto"?(cookies.resto_type==1?"(Mode Bayar Langsung)":"(Mode Bayar Setelah Makan)"):"")}
+								</div>
+							</div>
+						):null
+					}
+				</div>
+				</DialogBody>
+			</Dialog>
 		</div>
 	);
 }

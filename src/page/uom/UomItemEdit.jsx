@@ -167,7 +167,7 @@ export default function UomItemEdit(props={item:ItemListModel(), onClose:()=>{},
                                                 <div className="setlevel-item flex flex-col gap-4 mb-4 p-3 pt-6 bg-blue-gray-50 rounded-md">
                                                     <InputMoney
                                                         currency={currency}
-                                                        label="Biaya"
+                                                        label={dictionary.dialog.item.cost[lang]}
                                                         onChange={(evt) => handleChangeService(evt, "hrg", i, index)}
                                                         value={i.hrg}
                                                         disabled={true}
@@ -234,7 +234,7 @@ export default function UomItemEdit(props={item:ItemListModel(), onClose:()=>{},
                                                 <div className="setlevel-item flex flex-col gap-4 mb-4 p-3 pt-6 bg-blue-gray-50 rounded-md">
                                                     <InputMoney
                                                         currency={currency}
-                                                        label="Biaya"
+                                                        label={dictionary.dialog.item.cost[lang]}
                                                         onChange={(evt) => handleChangeService(evt, "hrg", i, index,2)}
                                                         value={i.hrg}
                                                     />
@@ -311,7 +311,7 @@ export default function UomItemEdit(props={item:ItemListModel(), onClose:()=>{},
                                                 <div className="setlevel-item flex flex-col gap-4 mb-4 p-3 pt-6 bg-blue-gray-50 rounded-md">
                                                     <InputMoney
                                                         currency={currency}
-                                                        label="Biaya"
+                                                        label={dictionary.dialog.item.cost[lang]}
                                                         onChange={(evt) => handleChangeService(evt, "hrg", i, index,3)}
                                                         value={i.hrg}
                                                     />

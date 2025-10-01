@@ -9,6 +9,10 @@ export const getTransaction = (body = GetTransactionReqBody()) => {
     return httpPost(`${API_HOST}/nota/read`, body);
 };
 
+export const getCountTransaction = (body = GetTransactionReqBody()) => {
+    return httpPost(`${API_HOST}/nota/count`, body);
+};
+
 export const deleteTransaction = (body = GetTransactionReqBody()) => {
     return httpPost(`${API_HOST}/nota/delete_new`, body);
 };

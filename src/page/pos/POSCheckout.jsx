@@ -1,7 +1,7 @@
 import { Button, Dialog, DialogHeader, DialogBody, DialogFooter, IconButton, List, ListItem,
   ListItemPrefix, ListItemSuffix, Navbar, Option, Switch, Select, Typography} from "@material-tailwind/react";
 import { useCallback, useContext, useState, useRef, useEffect } from "react";
-import { ArrowRightIcon, ChevronLeftIcon, CubeIcon, MinusCircleIcon, ArchiveBoxIcon,
+import { ArrowRightIcon, ChevronLeftIcon, CubeIcon, MinusCircleIcon, ArchiveBoxIcon, FolderMinusIcon
 } from "@heroicons/react/24/outline";
 import { AppContext } from "../../AppContext";
 import { ItemCheckoutModel } from "../../model/item";
@@ -47,7 +47,9 @@ export default function POSCheckout() {
   const [customers, setCustomers] = useState([]);
   const [customerNew, setCustomerNew] = useState("");
   const [tmpHeight, setTmpHeight] = useState(false);
-
+  const [reset, setReset] = useState(false);
+  const [disGlobalId, setDisGlobalId] = useState("");
+  const [cusGlobalId, setCusGlobalId] = useState("");
   function handleOpen(item) {
     setOpen(!open);
     setDiskonSelect(item.diskon==0?"":item.diskon)
@@ -109,16 +111,24 @@ export default function POSCheckout() {
     [itemsCheckout]
   );
 
-  const cancelPajak = useCallback(() => {
+  const cancelPajak = (() => {
     setPajakGlobal(0);
-  }, [pajakGlobal]);
+    setPajakGlobalId("");
+    const initpajak = async () => {
+      setTaxs([]);
+      const { data, error } = await getTax({
+        lok_id: cookies.lok_id,
+      });
+      if (data.length >= 1) {
+        setTaxs(data);
+      }
+    };
+    initpajak();
+  });
 
   const initItems = useCallback(
     //({ diskon = 0, diskonSelect = "", isNominal = false, itemsCheckout = [], diskonGlobal=0, pajakGlobal=0, pajakGlobalJSON={} }) => {
       ({ itemsCheckout = [], diskonGlobal=0, pajakGlobal=0 }) => {
-      console.log(pajakGlobal)
-      console.log(diskonGlobal)
-
       let _totalQty = 0;
       let _totalPrice = 0;
       itemsCheckout.forEach((item) => {
@@ -156,11 +166,13 @@ export default function POSCheckout() {
         let cekDiskonGlobalNew = data.filter(function (object) {
           return object.dis_global !== "true";
         });
-        console.log(cekDiskonGlobal)
-        console.log(cekDiskonGlobalNew)
         if (cekDiskonGlobal.length>0) {
           setSwitchValueGlobal(true);
           setDiskonsGlobal(cekDiskonGlobal);
+          setDiskonGlobal('');
+        }
+        else{
+          setDiskonGlobal(0);
         }
         if (cekDiskonGlobalNew.length>0) {
           _isNominal = true;
@@ -170,6 +182,9 @@ export default function POSCheckout() {
         else{
           setIsNominal(true)
         }
+      }
+      else{
+        setDiskonGlobal(0);
       }
     };
     const initpajak = async () => {
@@ -210,18 +225,12 @@ export default function POSCheckout() {
     if(pajakGlobalJSON.paj_id){
       setPajakGlobalId(pajakGlobalJSON.paj_id)
     }
-    setDiskonGlobal('');
-  }, []);
+    
+  }, [reset]);
 
   const handleDiskonInput = (evt) => {
     const diskonVal = evt.target.value;
     setDiskon(diskonVal);
-    // initItems({
-    //   diskon: diskonVal,
-    //   pajakGlobal:pajakGlobal,
-    //   isNominal,
-    //   itemsCheckout: itemsCheckout,
-    // });
     let _itemsCheckout = itemsCheckout.map((_item) => {
       if (_item.itm_id === checkoutById.itm_id && _item.konvidx === checkoutById.konvidx) {
           _item.diskon = Number(diskonVal);
@@ -251,6 +260,17 @@ export default function POSCheckout() {
     });
   };
 
+  const handleClear = () => {
+    setPajakGlobal(0);
+    setPajakGlobalId("");
+    setCustomerGlobal("");
+    setDiskonGlobal("");
+    setTableGlobal("");
+    setPajakGlobalJSON([]);
+    setCatatanGlobal("");
+    setReset(!reset);
+  };
+
   const handlePajakGlobal = (value) => {
     let getValue = taxs.filter(function (object) {
       return object.paj_id === value;
@@ -264,15 +284,58 @@ export default function POSCheckout() {
       itemsCheckout: itemsCheckout,
     });
   };
-
-  const handleDiskonGlobal = (evt) => {
-    setDiskonGlobal(evt.target.value);
+  const handleDiskonGlobalInput = (value) => {
+    setDiskonGlobal(value.target.value);
+    // const _diskons = cloneDeep(diskonsGlobal);
+    // let getValue = _diskons.filter(function (object) {
+    //   return object.dis_id === value;
+    // });
+    // setDiskonGlobal(getValue[0].dis_value);
+    // //setPajakGlobalJSON(getValue[0]);
     initItems({
-      pajakGlobal:pajakGlobal,
-      diskonGlobal: evt.target.value,
+      diskonGlobal: value.target.value,
+      pajakGlobal: pajakGlobal,
+      //pajakGlobalJSON:getValue[0],
       itemsCheckout: itemsCheckout,
     });
   };
+  const handleDiskonGlobal = (value) => {
+    const _diskons = cloneDeep(diskonsGlobal);
+    let getValue = _diskons.filter(function (object) {
+      return object.dis_id === value;
+    });
+    setDiskonGlobal(getValue[0].dis_value);
+    //setPajakGlobalJSON(getValue[0]);
+    initItems({
+      diskonGlobal: getValue[0].dis_value,
+      pajakGlobal: pajakGlobal,
+      //pajakGlobalJSON:getValue[0],
+      itemsCheckout: itemsCheckout,
+    });
+  };
+  const handleCustomer = (value) => {
+    const _customer = cloneDeep(customers);
+    let getValue = _customer.filter(function (object) {
+      return object.cus_id === value;
+    });
+    setCustomerGlobal(getValue[0].cus_nama);
+    //setPajakGlobalJSON(getValue[0]);
+    initItems({
+      diskonGlobal: diskonGlobal,
+      pajakGlobal: pajakGlobal,
+      //pajakGlobalJSON:getValue[0],
+      itemsCheckout: itemsCheckout,
+    });
+  };
+
+  // const handleDiskonGlobal = (evt) => {
+  //   setDiskonGlobal(evt.target.value);
+  //   initItems({
+  //     pajakGlobal:pajakGlobal,
+  //     diskonGlobal: evt.target.value,
+  //     itemsCheckout: itemsCheckout,
+  //   });
+  // };
 
   const handleCatatanGlobal = (evt) => {
     setCatatanGlobal(evt.target.value);
@@ -283,15 +346,18 @@ export default function POSCheckout() {
     const _newitemsCheckout = cloneDeep(itemsCheckout);
     const _itemsCheckout = _newitemsCheckout.map((_item) => {
       _item.service_level_satuan0=JSON.stringify(_item.service_level_satuan0);
+      _item.service_level=JSON.stringify(_item.service_level);
       return _item;
     });
-    if (tableGlobal != "") {
+    if (tableGlobal != ""&&cookies.lok_type=="resto"&&parseInt(cookies.resto_type)==2) {
       filterProps = {
         mej_id_new: parseInt(tableGlobal),
         resto_type: parseInt(cookies.resto_type),
         lok_type: cookies.lok_type,
       };
     }
+    else if(tableGlobal != ""&&cookies.lok_type=="resto"&&parseInt(cookies.resto_type)==1)
+      alert("Mode 'Resto Bayar Langsung', status meja tidak akan berubah saat draft. Switch ke mode 'Resto Bayar Setelah Makan' untuk melanjutkan")
     if (customerNew != "") {
       const initcustomer = async () => {
         const { data, error } = await saveCustomer({
@@ -362,14 +428,18 @@ export default function POSCheckout() {
     }
     if(diskonGlobal=='')
       setDiskonGlobal(0);
+    if(switchValueCustomer&&customerNew == ""){
+      alert('Mode kustomer baru sedang aktif, mohon lengkapi nama pelanggan atau nonaktifkan mode')
+    }
+    else{
     cookies.role_update.length==0&&cookies.role_dst.length==0?navigate(topic.cashier.calculator.route):(
       (cookies.role_dst.findIndex(a=>a=='ALL')>=0?
       navigate(topic.cashier.calculator.route):(cookies.role_update.findIndex(a=>a=='POS')>= 0?
       navigate(topic.cashier.calculator.route):null))
     )
-    console.log(totalPay)
+    }
     
-  }, [customerNew,itemsCheckout,diskonGlobal]);
+  }, [customerNew,itemsCheckout,diskonGlobal,switchValueCustomer]);
 
   if (!itemsCheckout || !itemsCheckout[0]) {
     return (
@@ -403,7 +473,18 @@ export default function POSCheckout() {
             <ArchiveBoxIcon className="w-7 h-7" />
           </span>
         </Button>
-
+        <Button
+          size="lg"
+          variant="outlined"
+          color="red"
+          className="relative bg-white w-[20%] max-w-[60px]"
+          onClick={() => handleClear()}
+        >
+          <span className="absolute text-[10px] top-[0%] left-1/2 -translate-x-1/2">Clear</span>
+          <span className="absolute left-1/2 top-[85%] -translate-x-1/2 -translate-y-[85%] transition-colors">
+            <FolderMinusIcon className="w-7 h-7" />
+          </span>
+        </Button>
         <Button
           size="lg"
           variant="gradient"
@@ -585,14 +666,14 @@ export default function POSCheckout() {
         <div className="input-area flex flex-col gap-3 p-2">
           <div className="Input-Item Pajak">
             {!taxs.length ? (
-              <InputNumber label="Pajak" disabled={true} />
+              <InputNumber label={dictionary.setting.tax.sidebar[lang]} disabled={true} />
             ) : (
               <Select
                 className="h-10 min-w-[200px]"
                 value={`${pajakGlobalId}`}
                 onChange={handlePajakGlobal}
                 color="teal"
-                label="Pajak"
+                label={dictionary.setting.tax.sidebar[lang]}
               >
                 {taxs.map((p) => (
                   <Option value={p.paj_id} key={p.paj_id}>
@@ -606,7 +687,7 @@ export default function POSCheckout() {
           <div className="Input-Item Catatan">
             <InputSimple
               value={catatanGlobal}
-              label="Catatan"
+              label={dictionary.stock.uom.note[lang]}
               onChange={(evt) => {
                 evt.preventDefault();
                 handleCatatanGlobal(evt);
@@ -619,28 +700,28 @@ export default function POSCheckout() {
               {!isNominalGlobal ? (
                 <InputNumber
                   value={diskonGlobal}
-                  label="Diskon Global"
+                  label={dictionary.setting.discountglobal.sidebar[lang]}
                   onChange={(evt) => {
                     evt.preventDefault();
-                    handleDiskonGlobal(evt);
+                    handleDiskonGlobalInput(evt);
                   }}
                   icon="%"
                 />
               ) : (
                 <>
                   {!diskonsGlobal.length ? (
-                    <InputNumber label="Diskon Global" disabled={true} />
+                    <InputNumber label={dictionary.setting.discountglobal.sidebar[lang]} disabled={true} />
                   ) : (
                     <Select
                       className="h-10"
                       id="customer"
-                      value={`${diskonGlobal}`}
-                      onChange={setDiskonGlobal}
+                      value={`${disGlobalId}`}
+                      onChange={handleDiskonGlobal}
                       color="teal"
-                      label="Pilih Diskon"
+                      label={dictionary.choose.discount[lang]}
                     >
                       {diskonsGlobal.map((p) => (
-                        <Option value={p.dis_value} key={p.dis_id}>
+                        <Option value={p.dis_id} key={p.dis_id}>
                           {p.dis_nama}
                         </Option>
                       ))}
@@ -651,7 +732,7 @@ export default function POSCheckout() {
             </div>
 
             <div className="Input-Item Mode-Persentase h-[40px] w-[30%] lg:w-[20%] pr-2">
-              <div className="text-[10px] text-gray-700 text-end mb-[2px]">Persen (%)</div>
+              <div className="text-[10px] text-gray-700 text-end mb-[2px]">{dictionary.universal.percent[lang]} (%)</div>
               <div className="flex justify-end">
                 {!switchValueGlobal ? (
                   <Switch value={false} color="light-blue" defaultChecked disabled={true} />
@@ -667,7 +748,7 @@ export default function POSCheckout() {
               {switchValueCustomer ? (
                 <InputSimple
                   value={customerNew}
-                  label="Pelanggan Baru"
+                  label={dictionary.new.customer[lang]}
                   onChange={(evt) => {
                     evt.preventDefault();
                     handleCustomerNew(evt);
@@ -676,14 +757,14 @@ export default function POSCheckout() {
               ) : (
                 <>
                   {!customers.length ? (
-                    <InputNumber label="Pelanggan" disabled={true} />
+                    <InputNumber label={dictionary.customer.sidebar[lang]} disabled={true} />
                   ) : (
                     <Select
                       id="customer"
-                      value={`${customerGlobal}`}
-                      onChange={setCustomerGlobal}
+                      value={`${cusGlobalId}`}
+                      onChange={handleCustomer}
                       color="teal"
-                      label={`Pilih ${dictionary.customer.sidebar[lang]}`}
+                      label={dictionary.choose.customer[lang]}
                     >
                       {customers.map((p) => (
                         <Option value={p.cus_id} key={p.cus_id}>
@@ -697,7 +778,7 @@ export default function POSCheckout() {
             </div>
 
             <div className="Input-Item Customer-Mode h-[40px] w-[30%] lg:w-[20%] pr-2">
-              <div className="text-[10px] text-gray-700 text-end mb-[2px]">Baru</div>
+              <div className="text-[10px] text-gray-700 text-end mb-[2px]">{dictionary.new.new[lang]}</div>
               <div className="flex justify-end">
                 <Switch color="light-blue" onChange={() => setSwitchValueCustomer(!switchValueCustomer)} />
               </div>
@@ -707,7 +788,7 @@ export default function POSCheckout() {
           {cookies.lok_type == "resto" && (
             <div className="Input-Item Meja">
               {!tables.length ? (
-                <InputNumber label="Meja" disabled={true} />
+                <InputNumber label={dictionary.table.sidebar[lang]} disabled={true} />
               ) : (
                 <Select
                   className="h-10"
@@ -715,7 +796,7 @@ export default function POSCheckout() {
                   value={`${tableGlobal}`}
                   onChange={setTableGlobal}
                   color="teal"
-                  label="Meja"
+                  label={dictionary.table.sidebar[lang]}
                 >
                   {tables.map((p) => (
                     <Option
@@ -734,14 +815,14 @@ export default function POSCheckout() {
       </div>
 
       <Dialog open={open} handler={handleOpen} size="md">
-        <DialogHeader className="border-b-2">DIskon</DialogHeader>
+        <DialogHeader className="border-b-2">{dictionary.setting.discount.sidebar[lang]}</DialogHeader>
         <DialogBody className="overflow-auto pb-10">
           <div className="grid grid-cols-5 gap-6 p-2 h-32">
             <div className="col-span-3">
               {isNominal ? (
                 <InputNumber
                   value={diskon}
-                  label="Diskon"
+                  label={dictionary.setting.discount.sidebar[lang]}
                   onChange={(evt) => {
                     evt.preventDefault();
                     handleDiskonInput(evt);
@@ -752,15 +833,15 @@ export default function POSCheckout() {
               ) : (
                 <div>
                   {!diskons.length ? (
-                    <InputNumber label="Diskon" disabled={true} />
+                    <InputNumber label={dictionary.setting.discount.sidebar[lang]} disabled={true} />
                   ) : (
                     <Select
                       className="h-10"
-                      id="customer"
+                      id="diskon"
                       value={`${diskonSelect}`}
                       onChange={handleDiskonSelect}
                       color="teal"
-                      label="Diskon"
+                      label={dictionary.setting.discount.sidebar[lang]}
                     >
                       {diskons.map((p) => (
                         <Option value={p.dis_value} key={p.dis_id}>
@@ -773,7 +854,7 @@ export default function POSCheckout() {
               )}
             </div>
             <div className="col-span-2">
-              <div className="text-xs ml-2 text-center">Mode Persentase</div>
+              <div className="text-xs ml-2 text-center">{dictionary.universal.percentagemode[lang]}</div>
               <div className="flex justify-center">
                 {!switchValue ? (
                   <Switch color="teal" defaultChecked disabled={true} />
@@ -786,7 +867,7 @@ export default function POSCheckout() {
         </DialogBody>
         <DialogFooter className="border-t-2">
           <Button variant="gradient" color="red" onClick={() => setOpen(false)} className="mr-1">
-            <span>Back</span>
+            <span>{dictionary.universal.back[lang]}</span>
           </Button>
         </DialogFooter>
       </Dialog>

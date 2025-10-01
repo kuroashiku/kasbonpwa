@@ -1,12 +1,16 @@
 import { InvoicePOS } from "../../model/invoice";
 import { formatThousandSeparator } from "../../util/formatter";
+import { format, setDefaultOptions } from "date-fns";
+import { id } from 'date-fns/locale'
 
 export default function POSInvoice({ data = InvoicePOS() }) {
+  setDefaultOptions({ locale: id })
   const HeaderArea = () => {
     return (
       <div className="title-area text-center border-b-2 border-dotted border-gray-800 pb-2 mb-3">
         <p className="nama text-[13px] font-semibold">{data.lokasi}</p>
         <p className="alamat text-[11px] text-gray-700">{data.alamatLokasi}</p>
+        <p className="tanggal text-[11px] text-gray-700">{format(new Date(), "dd MMMM yyyy hh:mm")}</p>
       </div>
     );
   };

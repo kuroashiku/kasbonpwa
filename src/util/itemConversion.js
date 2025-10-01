@@ -30,13 +30,13 @@ export const getMatchUnitAndPrice = (item=ItemCheckoutModel()) =>{
 export const getAllUoms = (item=ItemListModel()) =>{
     let uoms=[];
     if(item.itm_satuan1){
-        uoms.push(item.itm_satuan1);
+        uoms.push({satuan:item.itm_satuan1,stok:item.itm_stok});
     }
     if(item.itm_satuan2){
-        uoms.push(item.itm_satuan2);
+        uoms.push({satuan:item.itm_satuan2,stok:item.itm_stok_satuan2});
     }
     if(item.itm_satuan3){
-        uoms.push(item.itm_satuan3);
+        uoms.push({satuan:item.itm_satuan3,stok:item.itm_stok_satuan3});
     }
     return uoms;
 }

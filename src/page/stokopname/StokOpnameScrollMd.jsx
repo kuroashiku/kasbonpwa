@@ -8,7 +8,7 @@ import { dictionary } from "../../constant/appDictionary";
 import { AppContext } from "../../AppContext";
 import { IKImage } from "imagekitio-react";
 import { IMAGEKIT_URL_ENDPOINT } from "../../constant/appCommon";
-
+import { formatThousandSeparator, SetItemUnit } from "../../util/formatter";
 export default function UomItemScrollMd({
     items=[ItemListModel()],
     onSelect=()=>{},
@@ -18,6 +18,10 @@ export default function UomItemScrollMd({
     const {lang} = useContext(AppContext);
     const listItems = items.map((i,index) => {
         const uoms = getAllUoms(i);
+        let uomstring = '';
+        uoms.map((uom, i) => (
+            uomstring=uomstring+parseFloat(uom.stok)+' '+uom.satuan+", "
+        ))
         const image = i.itm_urlimage1;
         return(
             <Card key={index} className="max-w-[24rem] overflow-hidden">
@@ -44,12 +48,43 @@ export default function UomItemScrollMd({
                 </CardHeader>
                 <CardBody className="p-2">
                     <div><b>{i.itm_nama}</b></div>
-                    <Typography variant="small" color="gray">
-                        #{i.itm_kode}
-                    </Typography>
-                    <Typography color="gray" className="font-normal">
-                        {dictionary.stock.uom.unitList[lang]}: {uoms.join(", ")}
-                    </Typography>
+                    <div className="flex flex-col gap-1 mb-2">
+                        <div className="flex gap-1">
+                            <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-orange-100 rounded-md">{i.itm_kode}</div>
+                        </div>
+                        <div className="flex gap-1">
+                            <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-purple-100 rounded-md">
+                                {i.itm_pakaistok == "1" ? Number(i.itm_stok) : "available"}
+                            </div>
+                            <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+                                {SetItemUnit(i.itm_satuan1?i.itm_satuan1.toUpperCase():null)}
+                            </div>
+                            {
+                                (i.itm_satuan2!=null&&i.itm_satuan2!='')?
+                                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-purple-100 rounded-md">
+                                    {i.itm_pakaistok == "1" ? Number(i.itm_stok_satuan2) : "available"}
+                                </div>:null
+                            }
+                            {
+                                (i.itm_satuan2!=null&&i.itm_satuan2!='')?
+                                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+                                    {SetItemUnit(i.itm_satuan2?i.itm_satuan2.toUpperCase():null)}
+                                </div>:null
+                            }
+                            {
+                                (i.itm_satuan3!=null&&i.itm_satuan3!='')?
+                                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-purple-100 rounded-md">
+                                    {i.itm_pakaistok == "1" ? Number(i.itm_stok_satuan3) : "available"}
+                                </div>:null
+                            }
+                            {
+                                (i.itm_satuan3!=null&&i.itm_satuan3!='')?
+                                <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">
+                                    {SetItemUnit(i.itm_satuan3?i.itm_satuan3.toUpperCase():null)}
+                                </div>:null
+                            }
+                        </div>
+                    </div>
                     <Button size="sm" onClick={()=>onSelect(i)} color="teal" fullWidth variant="gradient" className="flex items-center px-2">
                         <span className="text-xs">{dictionary.stock.uom.stockopnamesetting[lang]}</span> 
                     </Button>

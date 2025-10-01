@@ -1,11 +1,16 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useContext } from "react";
 import { Button, Drawer, Option, Select, Typography } from "@material-tailwind/react";
 import { AdjustmentsVerticalIcon } from "@heroicons/react/24/outline";
-
+import { dictionary } from "../../constant/appDictionary";
+import { AppContext } from "../../AppContext";
+import { cloneDeep } from "lodash";
 export default function FilterBox({ open = false, setOpenFilter, month, setMonth, year, setYear }) {
   const [defMonth, setdefMonth] = useState(month);
   const [defYear, setdefYear] = useState(year);
-
+  const [intyear, setintyear] = useState(new Date().getFullYear());
+  const {lang } = useContext(AppContext);
+  const [constyear, setconstyear] = useState(dictionary.yearcalender[lang]);
+ 
   useEffect(() => {
     if (month && year) {
       // console.log(month, year);
@@ -17,6 +22,16 @@ export default function FilterBox({ open = false, setOpenFilter, month, setMonth
       }
     }
   }, [open, month, year]);
+
+  useEffect(() => {
+    const _data = cloneDeep(constyear);
+    const _datar=[];
+    _data.map((p, index) => {
+      if(p<=intyear)
+        _datar.push(p)
+    })
+    setconstyear(_datar)
+  }, [intyear]);
 
   const changeMonth = (month) => {
     // console.log("month:", month);
@@ -58,33 +73,38 @@ export default function FilterBox({ open = false, setOpenFilter, month, setMonth
       </div>
 
       <div className="flex flex-col gap-4">
-        <Select size="md" label="Pilih Bulan" value={defMonth} onChange={changeMonth}>
-          <Option value="1">Januari</Option>
-          <Option value="2">Februari</Option>
-          <Option value="3">Maret</Option>
-          <Option value="4">April</Option>
-          <Option value="5">Mei</Option>
-          <Option value="6">Juni</Option>
-          <Option value="7">Juli</Option>
-          <Option value="8">Agustus</Option>
-          <Option value="9">September</Option>
-          <Option value="10">Oktober</Option>
-          <Option value="11">November</Option>
-          <Option value="12">Desember</Option>
+        <Select
+          size="md"
+          value={defMonth}
+          onChange={changeMonth}
+          color="teal"
+          label={dictionary.universal.choosemonth[lang]}
+        >
+          {dictionary.monthcalender[lang].map((p, index) => (
+            <Option value={String(index+1)}>
+              {p}
+            </Option>
+          ))}
         </Select>
-
-        <Select size="md" label="Pilih Tahun" value={defYear} onChange={changeYear}>
-          <Option value="2020">2020</Option>
-          <Option value="2021">2021</Option>
-          <Option value="2022">2022</Option>
-          <Option value="2023">2023</Option>
-          <Option value="2024">2024</Option>
+        
+        <Select
+          size="md"
+          value={defYear}
+          onChange={changeYear}
+          color="teal"
+          label={dictionary.universal.chooseyear[lang]}
+        >
+          {constyear.map((q) => (
+            <Option value={String(q)}>
+              {q}
+            </Option>
+          ))}
         </Select>
       </div>
 
       <Button color="teal" className="flex items-center justify-center w-full mt-5" onClick={handleFilter}>
         <AdjustmentsVerticalIcon className="w-5 h-5 mr-2" />
-        Terapkan Filter
+        {dictionary.universal.apply[lang]} Filter
       </Button>
     </Drawer>
   );

@@ -9,7 +9,7 @@ export const paymentModes = Object.freeze([
     },
     {
         code: "CIL",
-        desc: "Piutang",
+        desc: "Cicilan",
     },
     {
         code: "gopay",

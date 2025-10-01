@@ -1,12 +1,13 @@
 import { InvoicePOS } from "../../model/invoice";
 import { formatThousandSeparator } from "../../util/formatter";
-
+import { format } from "date-fns";
 export default function POSInvoiceJoinBill({ data }) {
   const HeaderArea = () => {
     return (
       <div className="title-area text-center border-b-2 border-dotted border-gray-800 pb-2 mb-3">
         <p className="nama text-[13px] font-semibold">{data.lokasi}</p>
         <p className="alamat text-[11px] text-gray-700">{data.alamatLokasi}</p>
+        <p className="tanggal text-[11px] text-gray-700">{format(new Date(), "dd-MMM-yyyy-hh-mm-ss")}</p>
       </div>
     );
   };
@@ -25,41 +26,41 @@ console.log(data)
       <HeaderArea />
       
       {data.itemBillCheckout.map((iii, indexii) => {
+        console.log(iii)
         let _totalPrice = 0;
         iii.notaitems.forEach((item) => {
-          _totalPrice += parseFloat(item.nit_total);
+          _totalPrice += parseFloat(item.total);
         });
         const subTotal = _totalPrice;
         return(
           <div className="struk-content my-6 text-xs">
-            
               <div className="text-xs border-b-2 border-gray-800 my-2">
                 {iii.notaitems.map((i, index) => (
                   <div key={index} className="mb-2">
                     <div>
                       <p>
-                        {i.itm_nama} (per {i.nit_satuan0})
+                        {i.itm_nama} (per {i.satuan0})
                       </p>
                     </div>
                     <div className="flex">
-                      <p className="w-10">{parseFloat(i.nit_qty)} x</p>
+                      <p className="w-10">{parseFloat(i.qty)} x</p>
                       <p className="w-14">
-                        {formatThousandSeparator(parseFloat(i.nit_satuan0hrg))}
+                        {formatThousandSeparator(parseFloat(i.satuan0hrg))}
                       </p>
                       <p className="flex-grow text-right">
-                        {formatThousandSeparator(parseFloat(i.nit_qty) * parseFloat(i.nit_satuan0hrg))}
+                        {formatThousandSeparator(parseFloat(i.qty) * parseFloat(i.satuan0hrg))}
                       </p>
                     </div>
-                    {parseFloat(i.nit_diskon)==0 ? null : (
-                      <p className="text-right">{` (Disc ${Number(i.nit_diskon)}% : ${formatThousandSeparator(
-                        parseFloat(i.nit_qty) * (parseFloat(i.nit_satuan0hrg) * (1 - parseInt(i.nit_diskon) / 100))
+                    {parseFloat(i.diskon)==0 ? null : (
+                      <p className="text-right">{` (Disc ${Number(i.diskon)}% : ${formatThousandSeparator(
+                        parseFloat(i.qty) * (parseFloat(i.satuan0hrg) * (1 - parseInt(i.diskon) / 100))
                       )}) `}</p>
                     )}
                   </div>
                 ))}
               </div>
             
-            {!parseFloat(iii.not_diskon)==0||!parseFloat(iii.not_pajak)==0?(
+            {!parseFloat(iii.diskon)==0||!parseFloat(iii.pajak)==0?(
               <div className="flex justify-between">
               <p>Sub Total</p>
               <p>{formatThousandSeparator(subTotal)}</p>
@@ -71,32 +72,32 @@ console.log(data)
                 <p>{formatThousandSeparator(data.totalTemp)}</p>
               </div>
             )}
-            {parseFloat(iii.not_diskon)==0 ? null : (
+            {parseFloat(iii.diskon)==0 ? null : (
               <div className="flex-grow text-right">
-                <p className="text-right">{` (Disc ${Number(iii.not_diskon)}% : ${formatThousandSeparator(
-                    (parseFloat(subTotal) * (1 - parseInt(iii.not_diskon) / 100))
+                <p className="text-right">{` (Disc ${Number(iii.diskon)}% : ${formatThousandSeparator(
+                    (parseFloat(subTotal) * (1 - parseInt(iii.diskon) / 100))
                   )}) `}</p>
               </div>
             )}
-            {parseFloat(iii.not_pajak)==0 ? null : (
+            {parseFloat(iii.pajak)==0 ? null : (
               <div className="flex justify-between">
-                <p>{`Pajak ${formatThousandSeparator(iii.not_pajak)}%`}</p>
+                <p>{`Pajak ${formatThousandSeparator(iii.pajak)}%`}</p>
                 <p>{`${formatThousandSeparator(
-                    (parseFloat(subTotal) * (1 - parseInt(iii.not_diskon) / 100) * (parseInt(iii.not_pajak) / 100))
+                    (parseFloat(subTotal) * (1 - parseInt(iii.diskon) / 100) * (parseInt(iii.pajak) / 100))
                   )}`}</p>
               </div>
             )}
             <div className="flex justify-between">
               <p>Total</p>
-              <p>{formatThousandSeparator(parseFloat(iii.not_total))}</p>
+              <p>{formatThousandSeparator(parseFloat(iii.total))}</p>
             </div>
             <div className="flex justify-between">
               <p>Bayar</p>
-              <p>{formatThousandSeparator(parseFloat(iii.not_dibayar))}</p>
+              <p>{formatThousandSeparator(parseFloat(iii.dibayar))}</p>
             </div>
             <div className="flex justify-between">
-              <p>{iii.not_dicicil=="0" ? "Kembali" : "Kurang"}</p>
-              <p>{iii.not_kembalian ? formatThousandSeparator(parseFloat(iii.not_kembalian)) : 0}</p>
+              <p>{iii.dicicil=="0" ? "Kembali" : "Kurang"}</p>
+              <p>{iii.kembalian ? formatThousandSeparator(parseFloat(iii.kembalian)) : 0}</p>
             </div>
           </div>
             

@@ -17,7 +17,6 @@ export default function TransactionScroll({
   infinite = false,
 }) {
   const { currency, cookies } = useContext(AppContext);
-
   const listItems = transactions.map((i, index) => {
     const namacustomerdraft = i.cus_nama ? i.cus_nama : "Tanpa Nama";
     return (
@@ -26,7 +25,7 @@ export default function TransactionScroll({
           <Checkbox color="teal" onChange={() => onCheck(i)} checked={checkedIds.includes(i.id)} />
         </ListItemPrefix>
 
-        <div className="w-full flex flex-col gap-[5px]" onClick={() => onOpen(i, index)}>
+        <div className="w-full flex flex-col gap-[5px]" >
           <div className="w-[90%] whitespace-nowrap overflow-hidden text-ellipsis font-semibold">{i.nomor}</div>
           <div className="w-max py-[2px] px-2 text-[12px] font-semibold bg-blue-100 rounded-md">{namacustomerdraft}</div>
           <div className="flex items-center gap-1 text-sm">
@@ -34,7 +33,7 @@ export default function TransactionScroll({
               {currency} {formatThousandSeparator(parseFloat(i.total))}
             </div>
             {i.not_dicicil == 1 && i.piutlunas == 0 ? (
-              <span className="w-max py-[2px] px-2 font-semibold bg-orange-100 rounded-md">Belum Lunas</span>
+              <span className="w-max py-[2px] px-2 font-semibold bg-orange-100 rounded-md">Belum Lunas {"("+(i.cil_sisaa?formatThousandSeparator(parseFloat(i.cil_sisaa)):formatThousandSeparator(parseFloat(i.total-i.dibayar)))+")"}</span>
             ) : i.not_dicicil == 1 && i.piutlunas == 1 ? (
               <span className="w-max py-[2px] px-2 font-semibold bg-lime-200 rounded-md">Lunas</span>
             ) : (
@@ -47,15 +46,16 @@ export default function TransactionScroll({
             <PopoverHandler>
               <IconButton variant="text" color="blue-gray">
                 <InformationCircleIcon
-                  className={`${i.not_status ? "text-light-green-500" : "text-light-blue-500"} h-7 w-7`}
+                  className={`text-light-blue-500 h-7 w-7`}
                 />
               </IconButton>
             </PopoverHandler>
             {!i.notaitems ? null : (
               <PopoverContent className="w-11/12 max-w-[700px]">
+                
                 {i.notaitems.map((ii, indexi) => {
                   return cookies.lok_type == "laundry" ? (
-                    ii.service_level_satuan0.map((iii, indexii) => {
+                    ii.service_level_satuan0?.map((iii, indexii) => {
                       return (
                         <div key={indexi + indexii}>
                           <div className="w-full">
@@ -110,11 +110,15 @@ export default function TransactionScroll({
             <PrinterIcon className="h-6 w-6 text-purple-500" />
           </IconButton>
         </ListItemSuffix>
-        <ListItemSuffix>
-          <IconButton variant="text" color="blue-gray" onClick={() => onRemove(i)}>
-            <TrashIcon className="h-6 w-6 text-red-500" />
-          </IconButton>
-        </ListItemSuffix>
+        {
+          (cookies.role_nama).toLowerCase()=='admin'?
+          <ListItemSuffix>
+            <IconButton variant="text" color="blue-gray" onClick={() => onRemove(i)}>
+              <TrashIcon className="h-6 w-6 text-red-500" />
+            </IconButton>
+          </ListItemSuffix>:
+          null
+        }
       </ListItem>
     );
   });

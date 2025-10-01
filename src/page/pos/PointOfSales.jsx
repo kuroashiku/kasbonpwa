@@ -1,27 +1,16 @@
-import {
-  Button,
-  Dialog,
-  DialogBody,
-  DialogHeader,
-  DialogFooter,
-  IconButton,
-  List,
-  ListItem,
-  Navbar,
-  Typography,
-  Input,
-  Spinner,
+import { Button, Dialog, DialogBody, DialogHeader, DialogFooter,
+  IconButton, List, ListItem, Navbar, Typography, Input, Spinner,
 } from "@material-tailwind/react";
 import { Fragment, useCallback, useContext, useEffect, useRef, useState } from "react";
 import SearchNavbar from "../../lib/SearchNavbar";
-import { Bars3Icon, ShoppingCartIcon, BookmarkIcon, AdjustmentsVerticalIcon } from "@heroicons/react/24/outline";
+import { Bars3Icon, ShoppingCartIcon, BookmarkIcon, AdjustmentsVerticalIcon, QrCodeIcon } from "@heroicons/react/24/outline";
 import FilterChips from "../../lib/FilterChips";
 import { AppContext } from "../../AppContext";
-import { getItems } from "../../api/Item";
+import { getItems, categoriesItem } from "../../api/Item";
 import { getGeneralSetting, addGeneralSetting } from "../../api/GeneralSetting";
 import { config } from "../../api/Login";
 import { readDraftPos } from "../../api/Pos";
-import { ItemCheckoutModel, convertItemListToCheckout, convertDraftListToCheckout } from "../../model/item";
+import { ItemCheckoutModel, convertItemListToCheckout, convertDraftListToCheckout, convertItemListToCheckoutNew } from "../../model/item";
 import { formatThousandSeparator } from "../../util/formatter";
 import { dictionary } from "../../constant/appDictionary";
 import { useNavigate } from "react-router-dom";
@@ -30,9 +19,12 @@ import { PRINTER_STATE_NONE, PRINTER_STATE_SKIP, TIME_SEARCH_DEBOUNCE } from "..
 import LoadingOverlay from "../../lib/LoadingOverlay";
 import POSItemScrollSm from "./POSItemScrollSm";
 import POSItemScrollMd from "./POSItemScrollMd";
+import POSItemScrollSmJasa from "./POSItemScrollSmJasa";
+import POSItemScrollMdJasa from "./POSItemScrollMdJasa";
 import ItemFilter from "../item/ItemFilter";
 import { cloneDeep } from "lodash";
 import { FilterItemModel } from "../../model/filter";
+import BarcodeScanner from "../../lib/BarcodeScanner";
 
 export default function PointOfSales() {
   const {
@@ -61,6 +53,9 @@ export default function PointOfSales() {
     diskonGlobal,
     pajakGlobal,
     pajakGlobalJSON,
+    removeCookies,
+    privacy,
+    setPrivacy
   } = useContext(AppContext);
   const [listPadding, setListPadding] = useState("20px");
   const [loading, setLoading] = useState(true);
@@ -85,14 +80,26 @@ export default function PointOfSales() {
   const [itemsCount, setItemsCount] = useState(0);
   const openDrawerRight = () => setOpenFilter(true);
   const [categories, setCategories] = useState([]);
-  const [allItemsCount, setAllItemsCount] = useState(0);
+  const [local, setLocal] = useState([]);
+  const [totalitem, settotalitem] = useState(0);
+  const [openScanner, setOpenScanner] = useState(false);
+  const [keywordScanner, setKeywordScanner] = useState("");
+  const [onfocus, setOnfocus] = useState(false);
+  const [scanMode, setScanMode] = useState(1);
+  ///////////////////////mulai koding////////////////////
+
   const initData = useCallback(() => {
-    console.log(cookies);
+    if(!cookies.time_now)
+      navigate(topic.reLogin.route);
     const _categoryFilter = filters.find((f) => f.key === "category");
     const _filters = cloneDeep(filters);
     let _newfilter = _filters.filter(function (object) {
       return object.key === "category";
     });
+    // let _filter = _filters.filter(function (object) {
+    //   return object.key === "category"||object.key ==="search";
+    // });
+    // setFilters(_filter)
     let filterProps = {};
     let strcategory = "";
     _newfilter.map((i, index) => {
@@ -104,9 +111,16 @@ export default function PointOfSales() {
         category: strcategory.slice(0, -2),
       };
     }
+    // if(_filters.length>0){
+    //   localStorage.removeItem('pos_item');
+    // }
+    // if(localStorage.getItem("pos_item")){
+    //   JSON.parse(JSON.parse(localStorage.getItem("pos_item")).value)
+    // }
     if (keyword && keyword.length > 0) {
       const orderSearch = setTimeout(async () => {
         // setPage(1);
+        localStorage.removeItem("pos_item");
         setLoading(true);
         const { data, error } = await getItems({
           lok_id: cookies.lok_id,
@@ -121,68 +135,173 @@ export default function PointOfSales() {
         setLoading(false);
       }, TIME_SEARCH_DEBOUNCE);
       return () => {
+        console.log(keyword)
         clearTimeout(orderSearch);
       };
     } else if (!keyword) {
       const init = async () => {
         setLoading(true);
-        if (page <= 1) {
-          if (localStorage.getItem("pos_item_1")) {
-            const _items = JSON.parse(localStorage.getItem("pos_item_1")).value;
-            setItems(_items);
+          if (page <= 1) {
+            if (localStorage.pos_item) {
+              const _items = JSON.parse(localStorage.getItem("pos_item")).value;
+              setItems(_items);
+            }
+            else{
+              setItems([])
+              const { data, error } = await getItems({
+                lok_id: cookies.lok_id,
+                page: page,
+                rows: rowsPerPage,
+                sellable: "true",
+                ...filterProps,
+              });
+              if (error) alert(dictionary.universal.erroroccured[lang]);
+              else handleResponse({ data, error });
+            }
+            // }
           } else {
-            const { data, error } = await getItems({
-              lok_id: cookies.lok_id,
-              page: page,
-              rows: rowsPerPage,
-              sellable: "true",
-              ...filterProps,
-            });
-            if (error) alert("Item ke-1 keatas belum sempat tersimpan di lokal");
-            else handleResponse({ data, error });
+            if (localStorage.pos_item&&JSON.parse(localStorage.pos_item).page<=page) {
+              // const _items = JSON.parse(localStorage.getItem("pos_item")).value;
+              // setItems(_items);
+            // }
+            // else{
+              const { data, error } = await getItems({
+                lok_id: cookies.lok_id,
+                page: page,
+                rows: rowsPerPage,
+                sellable: "true",
+                ...filterProps,
+              });
+              if (error) alert("Item ke-" + page * 20 + " keatas belum sempat tersimpan di lokal");
+              else handleAppendResponse({ data, error });
+            }
           }
-        } else {
-          if (localStorage.getItem("pos_item_" + page)) {
-            const _items = JSON.parse(localStorage.getItem("pos_item_" + page)).value;
-            setItems([...items, ..._items]);
-          } else {
-            const { data, error } = await getItems({
-              lok_id: cookies.lok_id,
-              page: page,
-              rows: rowsPerPage,
-              sellable: "true",
-              ...filterProps,
-            });
-            if (error) alert("Item ke-" + page * 20 + " keatas belum sempat tersimpan di lokal");
-            else handleAppendResponse({ data, error });
-          }
-        }
+
+        
         setLoading(false);
-      };
+      }
       init();
     }
-  }, [keyword, filters, page, keydown]);
+  }, [keyword, filters, page, keydown, local]);
 
   useEffect(() => {
-    const initconfig = async () => {
-      const { data, error } = await config({
-        kas_id: cookies.kas_id,
-        lok_id: cookies.lok_id,
-      });
-      if (data) {
-        console.log(cookies);
-        //if(!cookies.scan_mode){
-        setCookies("nama_lokasi", data.nama);
-        setCookies("alamat_lokasi", data.alamat);
-        setCookies("footer1", data.footer1);
-        setCookies("footer2", data.footer2);
-        setCookies("telpon", data.telpon);
-        setCookies("paket", data.paket);
-        setCookies("qris", data.qris);
-        //}
+    setItems([]);
+    setPage(1);
+    initData();
+  }, [keyword, filters, keydown]);
+
+  useEffect(() => {
+    if (page > 1) initData();
+    else{
+      if(!filters)
+      {
+        const _filters = cloneDeep(filters);
+        let __filter = _filters.filter(function (object) {
+          return object.key === "category"||object.key ==="search";
+        });
+        setFilters(__filter)
       }
-    };
-    initconfig();
+    }
+  }, [page]);
+
+  const handleResponse = ({ data, error }) => {
+    if (error) {
+      alert(dictionary.universal.erroroccured[lang]);
+    } else {
+      setItems([]);
+      const _items = convertItemListToCheckoutNew(data);
+      console.log(_items)
+      //localStorage.removeItem("pos_item");
+      if (!localStorage.pos_item&&keyword=='') {
+        localStorage.setItem(
+					"pos_item",
+					JSON.stringify({
+					value: _items,
+					page: '1',
+					})
+			  );
+      }
+      setItems(_items);
+      setItemsCount(_items.length);
+      if (keydown.keyCode == 13) {
+        if (_items[0]) {
+          setItemScan(_items[0]);
+        }
+        setKeydown({});
+        setKeyword("");
+      }
+    }
+  };
+  
+  const handleAppendResponse = ({ data, error }) => {
+    if (error) {
+      alert(dictionary.universal.erroroccured[lang]);
+    } else {
+      const _itemclone = cloneDeep(JSON.parse(localStorage["pos_item"]).value);
+      const _items = convertItemListToCheckoutNew(data);
+      localStorage.setItem(
+					"pos_item",
+					JSON.stringify({
+					value: [..._itemclone, ..._items],
+					page: page,
+					})
+			);
+      const totalpage=Math.floor(_itemclone.length/20)
+      if(totalpage<=page)
+      setItems([...items, ..._items]);
+      // const _positem=JSON.parse(localStorage.getItem("pos_item")).value;
+      // const _positemclone = cloneDeep(JSON.parse(_positem));
+      // _positemclone.push(_items)
+      // localStorage.setItem(
+      //   "pos_item",
+      //   JSON.stringify({
+      //   key: "pos_item",
+      //   value: JSON.stringify(_positemclone),
+      //   })
+      // );
+    }
+  };
+  
+  useEffect(() => {
+    // const initconfig = async () => {
+    //   const { data, error } = await config({
+    //     kas_id: cookies.kas_id,
+    //     lok_id: cookies.lok_id,
+    //   });
+    //   if (data) {
+        
+    //     //if(!cookies.scan_mode){
+    //     setCookies("nama_lokasi", data.nama, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("alamat_lokasi", data.alamat, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("footer1", data.footer1, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("footer2", data.footer2, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("telpon", data.telpon, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("paket", data.paket, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     setCookies("qris", data.qris, {
+    //       expires: new Date(Date.now() + 1000 * 60 * 60 * 24 * 60)
+    //     });
+    //     //}
+    //   }
+    //   else{
+    //     removeCookies("lok_id");
+    //     removeCookies("role_dst");
+    //     removeCookies("role_read");
+    //     navigate(topic.login.route);
+    //   }
+    // };
+    // initconfig();
     const initkategori = async () => {
       setCategories([]);
       const { data, error } = await categoriesItem({
@@ -193,6 +312,32 @@ export default function PointOfSales() {
       }
     };
     initkategori();
+    if(privacy){
+      navigate(topic.login.route);
+    removeCookies("lok_id");
+		removeCookies("com_id");
+		removeCookies("kas_id");
+		removeCookies("kas_nama");
+		removeCookies("max_draft");
+		removeCookies("scan_mode");
+		removeCookies("max_piutang");
+		removeCookies("auto_logout");
+		removeCookies("lok_type");
+		removeCookies("dp_0");
+		removeCookies("time_now");
+		removeCookies("resto_type");
+		removeCookies("role_read");
+		removeCookies("role_create");
+		removeCookies("role_update");
+		removeCookies("role_delete");
+		removeCookies("role_dst");
+		removeCookies("qris");
+		removeCookies("role_nama");
+		removeCookies("split_bill");
+		removeCookies("join_bill");
+		removeCookies("lok_id");
+    setPrivacy(false)
+    }
   }, []);
 
   useEffect(() => {
@@ -221,66 +366,92 @@ export default function PointOfSales() {
     }
   }, [itemsCount, keyword]);
 
-  useEffect(() => {
-    setItems([]);
-    setPage(1);
-    initData();
-  }, [keyword, filters, keydown]);
+  const handleSearchEnter = useCallback(
+    async (event) => {
+      if (event.keyCode == 13) {
+        const { data, error } = await getItems({
+          lok_id: cookies.lok_id,
+          key_val: keywordScanner,
+        });
+        if (data) {
+          let foundItem = false;
+          let item=data[0];
+          const _itemsCheckout = itemsCheckout.map((_item) => {
+            let _item_temp = _item;
+            if (_item.itm_id === item.itm_id && _item.konvidx === item.konvidx) {
+              _item.qty =
+                cookies.lok_type !== "laundry"
+                  ? Number(_item.pakaistok) == 1
+                    ? Number(_item.stok) - _item.qty > 0
+                      ? _item.qty + 1
+                      : _item.qty
+                    : _item.qty + 1
+                  : _item.qty;
+              _item.total = _item.qty * _item.satuan0hrg;
+              _item.qty_service = 1;
+              _item.dot_id = 0;
+              _item.split_bill = "Bill-1";
+              foundItem = true;
+            }
+            return _item;
+          });
+          if (!foundItem) {
+            item.qty = 1;
+            // item.service_level_satuan0 = JSON.parse(
+            //   '[{"service_id":"1","service_itm_id":"' +
+            //     item.itm_id +
+            //     '","service_nama":"' +
+            //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].level : "") +
+            //     '","service_qty":1,"service_diskon":0,"service_hrg":"' +
+            //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].hrg : item.satuan0hrg) +
+            //     '","service_total":"' +
+            //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].hrg : item.satuan0hrg) +
+            //     '"}]'
+            // );
+            // item.service_level=item.service_level.length>0?JSON.parse(item.service_level):'[]';
+            item.satuan0 = item.itm_satuan1;
+            item.satuan0hrg = parseFloat(item.itm_satuan1hrg);
+            item.diskon=0;
+            item.kode=item.itm_kode;
+            item.total = item.itm_satuan1hrg;
+            item.qty_service = 1;
+            item.dot_id = 0;
+            item.split_bill = "Bill-1";
+            _itemsCheckout.push(item);
+          }
+          setItemsCheckout(_itemsCheckout);
+          setKeywordScanner("")
+          cookies.role_create.length == 0 && cookies.role_dst.length == 0
+            ? setItemsCheckout(_itemsCheckout)
+            : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+            ? setItemsCheckout(_itemsCheckout)
+            : cookies.role_create.findIndex((a) => a == "POS") >= 0
+            ? setItemsCheckout(_itemsCheckout)
+            : null;
+        }
+      }
+    },[itemsCheckout,keywordScanner]
+  );
 
-  useEffect(() => {
-    if (page > 1) initData();
-  }, [page]);
-
-  const handleSearchEnter = (event) => {
-    if (event.keyCode == 13) {
-      setKeydown(event);
-    }
+  const handleScanMode = () => {
+    setScanMode(scanMode==2?0:scanMode+1)
+    if(scanMode==2)
+      setOpenScanner(true)
   };
 
-  const handleResponse = ({ data, error }) => {
+  const handleLocal = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setItems([]);
-      const _items = convertItemListToCheckout(data);
       setItems(_items);
-      setItemsCount(_items.length);
-      if (keydown.keyCode == 13) {
-        if (_items[0]) {
-          setItemScan(_items[0]);
-        }
-        setKeydown({});
-        setKeyword("");
-      }
-      localStorage.setItem(
-        "pos_item_1",
-        JSON.stringify({
-          key: "pos_item",
-          value: convertItemListToCheckout(data),
-        })
-      );
-    }
-  };
-
-  const handleAppendResponse = ({ data, error }) => {
-    if (error) {
-      alert("Terjadi Kesalahan");
-    } else {
-      const _items = convertItemListToCheckout(data);
-      setItems([...items, ..._items]);
-      localStorage.setItem(
-        "pos_item_" + page,
-        JSON.stringify({
-          key: "pos_item",
-          value: convertItemListToCheckout(data),
-        })
-      );
     }
   };
   const handleCheckFilter = useCallback(
     (item) => {
       setPage(1);
       setItems([]);
+      localStorage.removeItem("pos_item");
       const oldArray = [...filters];
       const indexOfId = oldArray.findIndex((a) => a.value == item);
       if (indexOfId >= 0) {
@@ -293,10 +464,11 @@ export default function PointOfSales() {
         setFilters([...oldArray, newFilter]);
       }
     },
-    [filters]
+    [filters,local]
   );
 
-  useEffect(() => {
+  const clearFilters = useCallback(
+    (item) => {
     const _filters = cloneDeep(filters);
     let _newfilter = _filters.filter(function (object) {
       return object.key !== "category";
@@ -354,10 +526,11 @@ export default function PointOfSales() {
 
   const takeItem = useCallback(
     (item = ItemCheckoutModel()) => {
+      
       let foundItem = false;
       const _itemsCheckout = itemsCheckout.map((_item) => {
         let _item_temp = _item;
-        if (_item.itm_id === item.itm_id && _item.konvidx === item.konvidx) {
+        if (_item.itm_id === item.itm_id && _item.satuan0 === item.satuan0) {
           _item.qty =
             cookies.lok_type !== "laundry"
               ? Number(_item.pakaistok) == 1
@@ -374,6 +547,8 @@ export default function PointOfSales() {
         }
         return _item;
       });
+      console.log(_itemsCheckout)
+      console.log(cookies.lok_type)
       if (!foundItem) {
         item.qty = 1;
         item.service_level_satuan0 = JSON.parse(
@@ -387,6 +562,7 @@ export default function PointOfSales() {
             (item.service_level && item.service_level.length > 0 ? item.service_level[0].hrg : item.satuan0hrg) +
             '"}]'
         );
+        // item.service_level=item.service_level.length>0?JSON.parse(item.service_level):'[]';
         item.total = item.satuan0hrg;
         item.qty_service = 1;
         item.dot_id = 0;
@@ -409,27 +585,31 @@ export default function PointOfSales() {
     (item) => {
       setItemsCheckout([]);
       const checkOutDraftItem = [];
+      localStorage.removeItem('pos_item');
+      setItems([]);
+      setPage(1);
+      initData();
+      // const _items_ori = cloneDeep(items);
+      // console.log(_items_ori)
       const _items = convertDraftListToCheckout(item.notaitems);
-
       if (_items.length > 0) _items[0].dot_id = item.dot_id;
-      // {Number(i.pakaistok)==0?false:(Number(i.stok)>0?false:true)}
-      _items.forEach((_item, index) => {
-        if (
-          items.find((itm) => {
-            if (
-              (itm.itm_id == _item.itm_id && parseFloat(itm.stok) > 0 && parseInt(itm.pakaistok) > 0) ||
-              (itm.itm_id == _item.itm_id && parseFloat(itm.pakaistok) <= 0)
-            ) {
-              return true;
-            }
-            return false;
-          })
-        ) {
-          checkOutDraftItem.push(_item);
-        }
-      });
-      console.log(checkOutDraftItem);
-      setItemsCheckout(checkOutDraftItem);
+      // // {Number(i.pakaistok)==0?false:(Number(i.stok)>0?false:true)}
+      // _items.forEach((_item, index) => {
+      //   if (
+      //     items.find((itm) => {
+      //       if (
+      //         (itm.itm_id == _item.itm_id && parseFloat(itm.stok) > 0 && parseInt(itm.pakaistok) > 0) ||
+      //         (itm.itm_id == _item.itm_id && parseFloat(itm.pakaistok) <= 0)
+      //       ) {
+      //         return true;
+      //       }
+      //       return false;
+      //     })
+      //   ) {
+      //     checkOutDraftItem.push(_item);
+      //   }
+      // });
+      setItemsCheckout(_items);
       setCustomerGlobal(item.cus_id ? parseInt(item.cus_id) : "");
       setTableGlobal(item.mej_id ? parseInt(item.mej_id) : "");
       setDiskonGlobal(parseInt(item.diskon));
@@ -440,7 +620,7 @@ export default function PointOfSales() {
       // 	setDraftItems([]);
       // 	const { data, error } = await deleteDraftPos({ dot_id: item.dot_id });
       // 	if (error) {
-      // 		alert("Data tidak ditemukan");
+      // 		alert(dictionary.universal.notfound[lang]);
       // 	} else {
       // 		setDraftOpen(false);
       // 	}
@@ -448,6 +628,73 @@ export default function PointOfSales() {
       // init();
     },
     [items]
+  );
+
+  const handleResult = useCallback(
+    async (item) => {
+      const { data, error } = await getItems({
+        lok_id: cookies.lok_id,
+        key_val: item,
+      });
+      if (data) {
+        let foundItem = false;
+        let item=data[0];
+        const _itemsCheckout = itemsCheckout.map((_item) => {
+          let _item_temp = _item;
+          if (_item.itm_id === item.itm_id && _item.konvidx === item.konvidx) {
+            _item.qty =
+              cookies.lok_type !== "laundry"
+                ? Number(_item.pakaistok) == 1
+                  ? Number(_item.stok) - _item.qty > 0
+                    ? _item.qty + 1
+                    : _item.qty
+                  : _item.qty + 1
+                : _item.qty;
+            _item.total = _item.qty * _item.satuan0hrg;
+            _item.qty_service = 1;
+            _item.dot_id = 0;
+            _item.split_bill = "Bill-1";
+            foundItem = true;
+          }
+          return _item;
+        });
+        if (!foundItem) {
+          item.qty = 1;
+          // item.service_level_satuan0 = JSON.parse(
+          //   '[{"service_id":"1","service_itm_id":"' +
+          //     item.itm_id +
+          //     '","service_nama":"' +
+          //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].level : "") +
+          //     '","service_qty":1,"service_diskon":0,"service_hrg":"' +
+          //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].hrg : item.satuan0hrg) +
+          //     '","service_total":"' +
+          //     (item.service_level && item.service_level.length > 0 ? item.service_level[0].hrg : item.satuan0hrg) +
+          //     '"}]'
+          // );
+          // item.service_level=item.service_level.length>0?JSON.parse(item.service_level):'[]';
+          item.satuan0 = item.itm_satuan1;
+          item.satuan0hrg = parseFloat(item.itm_satuan1hrg);
+          item.diskon=0;
+          item.kode=item.itm_kode;
+          item.total = item.itm_satuan1hrg;
+          item.qty_service = 1;
+          item.dot_id = 0;
+          item.split_bill = "Bill-1";
+          _itemsCheckout.push(item);
+        }
+        setItemsCheckout(_itemsCheckout);
+        setKeywordScanner("")
+        cookies.role_create.length == 0 && cookies.role_dst.length == 0
+          ? setItemsCheckout(_itemsCheckout)
+          : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+          ? setItemsCheckout(_itemsCheckout)
+          : cookies.role_create.findIndex((a) => a == "POS") >= 0
+          ? setItemsCheckout(_itemsCheckout)
+          : null;
+      }
+      setOpenScanner(false)
+    },
+    [itemsCheckout]
   );
 
   const cancelItem = useCallback(
@@ -493,7 +740,7 @@ export default function PointOfSales() {
   const handleDraft = useCallback((keyword) => {
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setDraftItems(data);
         setDraftOpen(true);
@@ -523,6 +770,10 @@ export default function PointOfSales() {
   useEffect(() => {
     if (draftOpen) handleDraft(keywordDraft);
   }, [keywordDraft]);
+
+  // useEffect(() => {
+  //   if (openScanner) handleSearchEnter(keywordScanner);
+  // }, [keywordScanner]);
 
   const readFullDraft = useCallback(
     (item) => {
@@ -607,31 +858,98 @@ export default function PointOfSales() {
   const ShowContent = () => {
     if (semiDesktopMode) {
       return (
-        <POSItemScrollMd
-          items={items}
-          itemsCheckout={itemsCheckout}
-          onAdd={takeItem}
-          onRemove={cancelItem}
-          onOption={setContextMenuItem}
-          onHold={handleInput}
-          onLoad={() => setPage(page + 1)}
-          infinite={!keyword}
-        />
+        <div>
+          <div className="w-full flex gap-3 text-xs text-gray-700 px-[2%]">
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-orange-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.code[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-green-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.price[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-purple-100 rounded-sm"></div>
+              <div>{dictionary.stock.uom.stock[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-blue-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.unit[lang]}</div>
+            </div>
+          </div>
+          {
+            cookies.lok_type !== "laundry"?
+            <POSItemScrollMd
+              items={items}
+              itemsCheckout={itemsCheckout}
+              onAdd={takeItem}
+              onRemove={cancelItem}
+              onOption={setContextMenuItem}
+              onHold={handleInput}
+              onLoad={() => setPage(page + 1)}
+              infinite={!keyword}
+            />:
+            <POSItemScrollMdJasa
+              items={items}
+              itemsCheckout={itemsCheckout}
+              onAdd={takeItem}
+              onRemove={cancelItem}
+              onOption={setContextMenuItem}
+              onHold={handleInput}
+              onLoad={() => setPage(page + 1)}
+              infinite={!keyword}
+            />
+          }
+        </div>
       );
     } else {
       return (
+        <div>
+          <div className="w-full flex gap-3 text-xs text-gray-700 px-[2%]">
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-orange-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.code[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-green-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.price[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-purple-100 rounded-sm"></div>
+              <div>{dictionary.stock.uom.stock[lang]}</div>
+            </div>
+            <div className="flex gap-1">
+              <div className="w-max py-2 px-2 text-[12px] font-semibold bg-blue-100 rounded-sm"></div>
+              <div>{dictionary.dialog.item.unit[lang]}</div>
+            </div>
+          </div>
+        
         <List className="divide-y divide-dashed divide-gray-400">
-          <POSItemScrollSm
-            items={items}
-            itemsCheckout={itemsCheckout}
-            onAdd={takeItem}
-            onRemove={cancelItem}
-            onOption={setContextMenuItem}
-            onHold={(evt) => handleInput(evt)}
-            onLoad={() => setPage(page + 1)}
-            infinite={!keyword}
-          />
+          {
+            cookies.lok_type !== "laundry"?
+            <POSItemScrollSm
+              items={items}
+              itemsCheckout={itemsCheckout}
+              onAdd={takeItem}
+              onRemove={cancelItem}
+              onOption={setContextMenuItem}
+              onHold={handleInput}
+              onLoad={() => setPage(page + 1)}
+              infinite={!keyword}
+            />:
+            <POSItemScrollSmJasa
+              items={items}
+              itemsCheckout={itemsCheckout}
+              onAdd={takeItem}
+              onRemove={cancelItem}
+              onOption={setContextMenuItem}
+              onHold={(evt) => handleInput(evt)}
+              onLoad={() => setPage(page + 1)}
+              infinite={!keyword}
+            />
+          }
         </List>
+        </div>
       );
     }
   };
@@ -645,26 +963,51 @@ export default function PointOfSales() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
+              
                 <SearchNavbar
                   onSearch={setKeyword}
                   onKeyDown={handleSearchEnter}
                   value={keyword}
-                  label={"Cari Barang (Kasir)"}
+                  label={`${scanMode==1?dictionary.search.pos[lang]:(scanMode==2?dictionary.search.externalscan[lang]:dictionary.search.camerascan[lang])}`}
                 />
               </div>
+              <IconButton size="md" variant="text" onClick={handleScanMode}>
+                <div className="justify-items-center lowercase">
+                  <QrCodeIcon className={`"h-6 w-6 stroke-2" ${scanMode==1?"text-black":(scanMode==2?"text-green-500":"text-blue-500")}`} />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Scan
+                  </div>
+                </div>
+              </IconButton>
               <IconButton size="md" variant="text" onClick={openDrawerRight}>
-                <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Filter
+                  </div>
+                </div>
               </IconButton>
               <IconButton size="md" variant="text" onClick={() => handleDraft()}>
-                <BookmarkIcon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <BookmarkIcon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Draft
+                  </div>
+                </div>
               </IconButton>
             </div>
+            
             {!filters.length ? (
               <Typography variant="small" color="gray" className="absolute right-14 bottom-1 text-xs italic">
-                Semua Kategori
+                {dictionary.filter.itemCategory.all[lang]}
               </Typography>
             ) : (
               <div className="px-2 pt-4">
@@ -675,6 +1018,9 @@ export default function PointOfSales() {
         </div>
         <div className="pb-20 overflow-auto h-full" style={{ paddingTop: listPadding }}>
           <div className="min-h-screen">
+          {
+          scanMode==2?<input type={'text'} value={keywordScanner} autoFocus={true} onBlur={({ target }) => target.focus()} className="text-transparent caret-color: transparent border-2 bg-transparent border-transparent rounded-md w-1/2 focus:border-transparent focus:outline-none h-0 absolute" onKeyDown={handleSearchEnter}  onChange={(e)=>setKeywordScanner(e.target.value)}/>:null
+          }
             {!items.length && !loading ? (
               <div className="mx-auto py-20 w-fit">{dictionary.cashier.pos.noItems[lang]}</div>
             ) : (
@@ -690,11 +1036,14 @@ export default function PointOfSales() {
               color="green"
               className="group w-full relative flex items-center gap-3 overflow-hidden pr-[60px] pl-3 mx-auto desktop:max-w-[60%]"
               onClick={() =>
+              {console.log(itemsCheckout)
                 cookies.lok_type == "laundry"
                   ? navigate(topic.cashier.checkout_laundry.route)
                   : cookies.split_bill
                   ? navigate(topic.cashier.checkout_splitbill.route)
                   : navigate(topic.cashier.checkout.route)
+                }
+                
               }
               onContextMenu={(evt) => {
                 evt.preventDefault();
@@ -713,6 +1062,7 @@ export default function PointOfSales() {
             </Button>
           </div>
         )}
+        
       </div>
       <Dialog open={contextMenuItem != null} handler={() => setContextMenuItem(null)}>
         <DialogHeader>{dictionary.cashier.pos.clearHeader[lang]}</DialogHeader>
@@ -730,7 +1080,7 @@ export default function PointOfSales() {
         </DialogBody>
       </Dialog>
       <Dialog open={draftOpen} handler={handleDraft} size="xxl" className="bg-white overflow-hidden">
-        <DialogHeader>Draft Pesanan {cookies.max_draft ? `Batasan ${cookies.max_draft} Pesanan` : null}</DialogHeader>
+        <DialogHeader>{dictionary.dialogheader.orderdraft[lang]} {cookies.max_draft ? dictionary.dialogheader.limitation[lang]+' '+cookies.max_draft+' '+dictionary.dialogheader.order[lang] : null}</DialogHeader>
         <DialogBody className="overflow-auto p-0">
           <div className="p-2 top-0 inset-x-0 fixed z-50">
             <Navbar
@@ -744,7 +1094,7 @@ export default function PointOfSales() {
                     onSearch={setKeywordDraft}
                     onKeyDown={handleSearchEnter}
                     value={keywordDraft}
-                    label="Cari Meja/Item/Kustomer"
+                    label={dictionary.search.itemtablecustomer[lang]}
                   />
                 </div>
               </div>
@@ -790,7 +1140,7 @@ export default function PointOfSales() {
                           : i.notaitems.map((ii, indexi) => {
                               return indexi < 3 ? (
                                 <div className="text-white bg-teal-700 hover:bg-teal-800 focus:ring-4 focus:ring-teal-200 font-medium rounded-lg text-sm px-2 py-1 me-2 mb-2 dark:bg-teal-600 dark:hover:bg-teal-700 focus:outline-none dark:focus:ring-teal-800">
-                                  {Number(ii.qty)}
+                                  {Number(ii.qty)}{ii.satuan0}
                                   {`-${ii.itm_nama}`}
                                 </div>
                               ) : indexi == i.notaitems.length - 1 ? (
@@ -814,7 +1164,7 @@ export default function PointOfSales() {
         </DialogBody>
         <DialogFooter>
           <Button variant="gradient" color="red" onClick={() => setDraftOpen(false)} className="mr-1">
-            <span>Back</span>
+            <span>{dictionary.universal.back[lang]}</span>
           </Button>
         </DialogFooter>
       </Dialog>
@@ -825,11 +1175,20 @@ export default function PointOfSales() {
             <Input type="number" label="Qty" value={qty} onChange={handleChangeQty}></Input>
           </div>
           <Button className="mb-4 mr-2" variant="gradient" color="red" onClick={() => setInputOpen(false)}>
-            Batal
+            {dictionary.universal.cancel[lang]}
           </Button>
           <Button variant="gradient" color="teal" onClick={() => handleAcceptInput()} className="mb-4">
-            Terapkan
+            {dictionary.universal.apply[lang]}
           </Button>
+        </DialogBody>
+      </Dialog>
+      <Dialog open={openScanner} handler={() => setOpenScanner(false)} size="xl">
+        <DialogHeader>Scanner</DialogHeader>
+        <DialogBody>
+          
+          <BarcodeScanner 
+          result={handleResult}
+          />
         </DialogBody>
       </Dialog>
       <Dialog open={cartOptions} handler={() => setCartOption(false)}>
@@ -864,18 +1223,18 @@ export default function PointOfSales() {
         <DialogHeader>Setup Printer</DialogHeader>
         <DialogBody>
           {!printerLoading ? (
-            <div className="mb-3">Printer belum diset-up. Set-up printer sekarang?</div>
+            <div className="mb-3">{dictionary.dialog.bluetooth.setup[lang]}</div>
           ) : (
             <span className="flex items-center mx-auto">
-              <span>Melakukan set-up printer</span>
+              <span>{dictionary.dialog.bluetooth.performing[lang]}</span>
               <Spinner className="h-5 w-5 ml-3" color="teal" />
             </span>
           )}
           <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={initPrinterBT}>
-            Ya, via Bluetooth
+            {dictionary.dialog.bluetooth.bluetooth[lang]}
           </Button>
           <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={initPrinterUSB}>
-            Ya, via USB
+            {dictionary.dialog.bluetooth.usb[lang]}
           </Button>
           <Button
             className="mb-2"
@@ -884,7 +1243,7 @@ export default function PointOfSales() {
             color="teal"
             onClick={() => setPrinterState(PRINTER_STATE_SKIP)}
           >
-            Nanti saja
+           {dictionary.dialog.bluetooth.later[lang]}
           </Button>
         </DialogBody>
       </Dialog>
@@ -892,7 +1251,7 @@ export default function PointOfSales() {
         open={openFilter}
         onClose={() => setOpenFilter(false)}
         onCheck={handleCheckFilter}
-        onClear={() => setClearFilter(!clearFilter)}
+        onClear={clearFilters}
         checkedIds={filters?.map((i, index) => i.value)}
         categories={categories}
       />

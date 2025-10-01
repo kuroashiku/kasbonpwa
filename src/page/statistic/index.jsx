@@ -138,6 +138,7 @@ function Statistic() {
 
       /** dismiss all array if all of the item has no total value */
       const noTransaction = resultdata.every((item) => item.total === 0);
+      console.log(resultdata)
       if (noTransaction) {
         setDailyStatistics([]);
       } else {
@@ -148,7 +149,7 @@ function Statistic() {
 
   const handleResponse = ({ type, data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       handleData(data, type);
     }
@@ -239,7 +240,12 @@ function Statistic() {
         <Navbar ref={navbarRef} className={`max-w-full py-2 px-2 relative`} blurred={false}>
           <div className="flex items-center justify-between">
             <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-              <Bars3Icon className="h-6 w-6 stroke-2" />
+              <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
             </IconButton>
             <ShowNavbarTitle />
             <IconButton size="md" variant="text" onClick={() => setOpenFilter(true)}>

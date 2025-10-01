@@ -25,7 +25,7 @@ export default function BOMItemScroll({
 					<b>{formatSentenceCase(i.itm_nama)}</b> {i.satuan0?"/":""} {i.satuan0?i.satuan0:""}
 				</Typography>
 				<Typography color="gray" className="font-normal">
-					{i.total}
+					{i.itm_pakaistok1=="1"?(i.itm_stoknew==0?"Habis":i.itm_stoknew):"No limit"}
 				</Typography>
 				</div>
 			</div>

@@ -12,7 +12,9 @@ import POSInvoiceSplitBill from "./POSInvoiceSplitBill";
 import ThermalPrinterEncoder from "thermal-printer-encoder";
 import { format } from "date-fns";
 import { PRINTER_STATE_NONE } from "../../constant/appCommon";
-
+import { ChevronLeftIcon } from "@heroicons/react/24/solid";
+import pdf from "../../assets/icons/pdf.png";
+import printer from "../../assets/icons/printer.png";
 export default function POSSuccessSplitBill({paymentMode}){
     const navigate = useNavigate();
     const {cookies,print, printerState, lang, currency, notaItemsCheckout, setNotaItemsCheckout, 
@@ -215,67 +217,37 @@ export default function POSSuccessSplitBill({paymentMode}){
                 </div>
             )
 	};
-    return(
-        <div className="bg-gray-50 overflow-hidden relative p-6">
-            <div className="no-print">
-                <Typography className="text-center my-3"variant="h4">
-                    {paymentModeObj ? paymentModeObj.desc : ""}
-                </Typography>
-                <Typography className="text-center my-3">
-                    {dictionary.cashier.calculator.pay[lang]} {currency} {formatThousandSeparator(totalPayView)}
-                </Typography>
-                <Typography className="text-center my-3">
-                    {dictionary.cashier.calculator.moneyBack[lang]} <br/>{currency} {!cashback? 0:formatThousandSeparator(cashback)}
-                </Typography>
-                <div className="mx-auto w-fit mb-3">
-                    <CheckBadgeIcon className="w-14 h-14 text-teal-600"/>
-                </div>
-                <div className="grid grid-cols-2 gap-4">
-                    <Button
-                        size="lg"
-                        variant="outlined"
-                        color="teal"
-                        className="group w-full relative flex items-center gap-3 overflow-hidden pr-[72px] mb-4"
-                        onClick={()=>window.print()}
-                    >
-                        <span className="flex-grow text-left">
-                            {dictionary.cashier.calculator.pdf[lang]}
-                        </span>
-                        <span className="absolute right-0 grid h-full w-12 place-items-center">
-                            <DocumentIcon className="w-5 h-5"/>
-                        </span>
-                    </Button>
-                    <Button
-                        size="lg"
-                        variant="outlined"
-                        color="teal"
-                        className="group w-full relative flex items-center gap-3 overflow-hidden pr-[72px] mb-4"
-                        onClick={printBill}
-                    >
-                        <span className="flex-grow text-left">
-                            {dictionary.cashier.calculator.print[lang]}
-                        </span>
-                        <span className="absolute right-0 grid h-full w-12 place-items-center">
-                            <PrinterIcon className="w-5 h-5"/>
-                        </span>
-                    </Button>
-                </div>
-                <Button
-                    size="lg"
-                    variant="outlined"
-                    color="teal"
-                    className="group w-full relative flex items-center gap-3 overflow-hidden pr-[72px]"
-                    onClick={()=>navigate(topic.cashier.route)}
-                >
-                    <span className="flex-grow text-left">
-                        {dictionary.cashier.calculator.newTrans[lang]}
-                    </span>
-                    <span className="absolute right-0 grid h-full w-12 place-items-center">
-                        <CalculatorIcon className="w-5 h-5"/>
-                    </span>
-                </Button>
+    return (
+        <div className="min-h-screen bg-gray-50 overflow-hidden relative p-2">
+          <div className="header flex justify-between items-center gap-3 w-full max-w-screen-2xl rounded-xl py-4 shadow-md bg-white mb-6 pt-2 px-2 pb-4 relative">
+            <div
+              className="back text-black cursor-pointer"
+              onClick={() => {
+                if (localStorage.getItem("checkout-prev") === "/") {
+                  navigate(localStorage.getItem("checkout-prev"));
+                } else {
+                  exit();
+                }
+              }}
+            >
+              <ChevronLeftIcon className="h-6 w-6" />
             </div>
+            <div className="w-[20%] flex gap-3 justify-end mr-2">
+              <div className="pdf" onClick={() => window.print()}>
+                <img src={pdf} alt="pdf" className="max-w-[24px]" />
+              </div>
+              <div className="print" onClick={printBill}>
+                <img src={printer} alt="print" className="max-w-[24px]" />
+              </div>
+            </div>
+          </div>
+    
+          {localStorage.getItem("checkout-prev") === "/" && (
+            <div className="info text-center font-semibold text-light-blue-800">Pembayaran Berhasil!</div>
+          )}
+    
             <InvoiceArea />
         </div>
-    )
+      );
+   
 }

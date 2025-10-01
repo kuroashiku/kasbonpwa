@@ -22,7 +22,7 @@ export default function Qris(){
         const save = async () => {
 			const { data, error } = await updateLokasi({ lok_prop:"lok_qris",lok_value:url, lok_id:cookies.lok_id });
 			if (error) {
-				alert("Data tidak ditemukan");
+				alert(dictionary.universal.notfound[lang]);
 			} else {
                 setCookies("qris", data);
 			}
@@ -39,7 +39,12 @@ export default function Qris(){
                 <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
                     <div className="flex items-center">
                     <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                        <Bars3Icon className="h-6 w-6 stroke-2" />
+                        <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
                     </IconButton>
                     <div className="mx-2 flex-grow text-black font-semibold">
                     QRIS Saya

@@ -49,3 +49,30 @@ export const updateLokasi = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/userman/update_lokasi`, body);
 };
 
+export const readCompany = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/read_company`, body);
+};
+
+export const readLokasi = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/read_lokasi`, body);
+};
+
+export const saveCompany = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/save_company`, body);
+};
+
+export const saveLokasi = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/save_lokasi`, body);
+};
+
+export const saveKasir = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/save_kasir`, body);
+};
+
+export const setOtp = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/sign_in`, body);
+};
+
+export const verify = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/userman/verify`, body);
+};

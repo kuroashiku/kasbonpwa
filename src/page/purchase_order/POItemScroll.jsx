@@ -25,6 +25,9 @@ export default function POItemScroll({
 					<b>{formatSentenceCase(i.itm_nama)} /{formatSentenceCase(i.satuan0)}</b>
 				</Typography>
 				<Typography color="gray" className="font-normal">
+					{i.qtytemp&&i.qtytemp!=0?("+ "+i.qtytemp):""}
+				</Typography>
+				<Typography color="gray" className="font-normal">
 					{currency} {formatThousandSeparator(i.satuan0hpp)}
 				</Typography>
 				</div>

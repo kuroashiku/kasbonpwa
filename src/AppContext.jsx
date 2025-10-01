@@ -81,6 +81,10 @@ export const AppContext = createContext({
   setTotalPayTemp: () => {},
   totalPriceBill: [],
   setTotalPriceBill: () => {},
+  privacy: false,
+  setPrivacy: () => {},
+  modeCil: false,
+  setModeCil: () => {},
 });
 
 export const AppProvider = ({ children = <div /> }) => {
@@ -100,6 +104,8 @@ export const AppProvider = ({ children = <div /> }) => {
     "com_id",
     "kas_id",
     "kas_nama",
+    "kas_nick",
+    "kas_owner",
     "max_draft",
     "scan_mode",
     "max_piutang",
@@ -116,7 +122,9 @@ export const AppProvider = ({ children = <div /> }) => {
     "qris",
     "role_nama",
     "split_bill",
-    "join_bill"
+    "join_bill",
+    "income_outcome",
+    "stokitem"
   ]);
   const [countCustomer, setCountCustomer] = useState(0);
   const [countSupplier, setCountSupplier] = useState(0);
@@ -147,6 +155,8 @@ export const AppProvider = ({ children = <div /> }) => {
   const [totalPrice, setTotalPrice] = useState(0);
   const [totalPayTemp, setTotalPayTemp] = useState(0);
   const [totalPriceBill, setTotalPriceBill] = useState([]);
+  const [privacy, setPrivacy] = useState(false);
+  const [modeCil, setModeCil] = useState('KAS');
   useEffect(() => {
     // setMobile(!window.matchMedia("(min-width: 575px)").matches);
     // console.log(window.innerWidth, window.innerWidth > 1345);
@@ -272,6 +282,10 @@ export const AppProvider = ({ children = <div /> }) => {
         setTotalPayTemp,
         totalPriceBill,
         setTotalPriceBill,
+        privacy,
+        setPrivacy,
+        modeCil,
+        setModeCil
       }}
     >
       {children}

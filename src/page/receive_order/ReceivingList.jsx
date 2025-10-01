@@ -66,7 +66,7 @@ export default function ReceivingList() {
   // const closeDrawerRight = () => setOpenFilter(false);
   const handleResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setReceivings(data);
     }
@@ -272,7 +272,7 @@ export default function ReceivingList() {
 
   const handleResponseItem = ({ data, error }) => {
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setPolist(data);
     }
@@ -332,7 +332,7 @@ export default function ReceivingList() {
 
   const handleAppendResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       const _rcv = data;
       setReceivings([...receivings, ..._rcv]);
@@ -356,7 +356,7 @@ export default function ReceivingList() {
 
   const handleAppendResponseItem = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       const _po = data;
       setPolist([...polist, ..._po]);
@@ -396,7 +396,7 @@ export default function ReceivingList() {
       kas_id: cookies.kas_id,
     });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
@@ -425,7 +425,12 @@ export default function ReceivingList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
                 <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.transaction.search[lang]} />
@@ -539,7 +544,12 @@ export default function ReceivingList() {
                 >
                   <div className="flex items-center">
                     <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                      <Bars3Icon className="h-6 w-6 stroke-2" />
+                      <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
                     </IconButton>
                     <div className="mx-2 flex-grow">
                       <SearchNavbar
@@ -571,15 +581,14 @@ export default function ReceivingList() {
               }}
               className="mr-1"
             >
-              <span>Back</span>
+              <span>{dictionary.universal.back[lang]}</span>
             </Button>
             <Button className="block" variant="gradient" color="green" onClick={saveData}>
-              <span>Confirm</span>
+              <span>{dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
         <Dialog open={newOpen} handler={handleNewOpen}>
-          <DialogHeader>Konfirmasi Penghapusan Data</DialogHeader>
           <DialogBody>
             <div className="my-16 mx-5 text-justify">
               Apakah anda yakin untuk menghapus transaksi bernomor {transById.nomor} ?
@@ -587,10 +596,10 @@ export default function ReceivingList() {
           </DialogBody>
           <DialogFooter>
             <Button variant="gradient" color="red" onClick={() => setNewOpen(false)} className="mr-1">
-              <span>Cancel</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="teal" onClick={handleDelete}>
-              <span>Confirm</span>
+              <span>{dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

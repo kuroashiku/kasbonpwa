@@ -70,12 +70,12 @@ export default function discountList() {
     if (setedit == 1) {
       setReadonly(true);
       setDiscountById(item);
-      settxtTitle("Detail Diskon");
+      settxtTitle("Detail "+dictionary.setting.discount.sidebar[lang]);
       setOpen(!open);
     } else if (setedit == 2) {
       setReadonly(false);
       setDiscountById(item);
-      settxtTitle("Edit Diskon");
+      settxtTitle("Edit "+dictionary.setting.discount.sidebar[lang]);
       cookies.role_update.length == 0 && cookies.role_dst.length == 0
         ? setOpen(!open)
         : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
@@ -86,7 +86,7 @@ export default function discountList() {
     } else if (setedit == 3) {
       setDiscountById({ dis_lok_id: cookies.lok_id, dis_id: -1 });
       setReadonly(false);
-      settxtTitle("Tambah Diskon");
+      settxtTitle(dictionary.universal.add[lang]+" "+dictionary.setting.discount.sidebar[lang]);
       cookies.role_create.length == 0 && cookies.role_dst.length == 0
         ? setOpen(!open)
         : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
@@ -97,12 +97,12 @@ export default function discountList() {
     } else if (setedit == 4) {
       setReadonly(true);
       setDiscountById(item);
-      settxtTitle("Detail Diskon Global");
+      settxtTitle("Detail "+dictionary.universal.globaldiscount[lang]);
       setOpen(!open);
     } else if (setedit == 5) {
       setReadonly(false);
       setDiscountById(item);
-      settxtTitle("Edit Diskon Global");
+      settxtTitle("Edit "+dictionary.universal.globaldiscount[lang]);
       cookies.role_update.length == 0 && cookies.role_dst.length == 0
         ? setOpen(!open)
         : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
@@ -113,7 +113,7 @@ export default function discountList() {
     } else if (setedit == 6) {
       setDiscountById({ dis_lok_id: cookies.lok_id, dis_id: -1, dis_global: "true" });
       setReadonly(false);
-      settxtTitle("Tambah Diskon GLobal");
+      settxtTitle(dictionary.universal.add[lang]+" "+dictionary.universal.globaldiscount[lang]);
       cookies.role_create.length == 0 && cookies.role_dst.length == 0
         ? setOpen(!open)
         : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
@@ -146,14 +146,14 @@ export default function discountList() {
     setItemDisplay(null);
     const { data, error } = await deleteDiscount({ dis_id: discountId });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setDiscounts([]);
       setDiscountId(-1);
       const { data, error } = await getDiscount({ lok_id: cookies.lok_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setDiscounts(data);
         setNewOpen(false);
@@ -167,14 +167,14 @@ export default function discountList() {
     setItemDisplay(null);
     const { data, error } = await saveDiscount(discountById);
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       mode <= 3 ? setDiscounts([]) : setDiscountsGlobal([]);
       const { data, error } = await getDiscount({ lok_id: cookies.lok_id, dis_global: mode <= 3 ? null : "true" });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         mode <= 3 ? setDiscounts(data) : setDiscountsGlobal(data);
       }
@@ -188,14 +188,14 @@ export default function discountList() {
     }
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setDiscounts(data);
       }
     };
     const handleResponseGlobal = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setDiscountsGlobal(data);
       }
@@ -215,7 +215,6 @@ export default function discountList() {
         setLoading(true);
         setDiscountsGlobal([]);
         const { data, error } = await getDiscount({ lok_id: cookies.lok_id, dis_global: "true" });
-        console.log(data);
         handleResponseGlobal({ data, error });
         setLoading(false);
       }
@@ -236,7 +235,6 @@ export default function discountList() {
         setLoading(true);
         setDiscounts([]);
         const { data, error } = await getDiscount({ lok_id: cookies.lok_id, dis_global: null });
-        console.log(data);
         handleResponse({ data, error });
         setLoading(false);
       }
@@ -257,7 +255,12 @@ export default function discountList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
             <div className="flex gap-3 items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="text-base font-semibold text-[#606060]">Diskon</div>
             </div>
@@ -373,7 +376,7 @@ export default function discountList() {
             <div className="mb-4">
               <InputSimple
                 value={discountById.dis_nama}
-                label="Nama Diskon"
+                label={dictionary.dialog.discount.name[lang]}
                 onChange={(evt) => handleChange(evt, "dis_nama")}
                 disabled={readonly}
               />
@@ -381,7 +384,7 @@ export default function discountList() {
             <div className="mb-4">
               <InputNumber
                 value={discountById.dis_value}
-                label="Nilai Diskon"
+                label={dictionary.dialog.discount.value[lang]}
                 onChange={(evt) => handleChange(evt, "dis_value")}
                 disabled={readonly}
                 icon="%"
@@ -390,7 +393,7 @@ export default function discountList() {
           </DialogBody>
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
-              <span>{mode == 1 || mode == 4 ? "Kembali" : "Batal"}</span>
+              <span>{mode == 1 || mode == 4 ? "Kembali" : dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button
               variant="gradient"
@@ -398,7 +401,7 @@ export default function discountList() {
               onClick={mode == 1 ? () => handleNewOpen(discountById.dis_id) : saveData}
               className="w-full flex-1"
             >
-              <span>{mode == 1 || mode == 4 ? "Hapus" : "Konfirmasi"}</span>
+              <span>{mode == 1 || mode == 4 ? dictionary.universal.delete[lang] : dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -406,16 +409,16 @@ export default function discountList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Diskon <span className="font-semibold">{discountById.dis_nama}</span> akan dihapus. Apakah anda yakin?
+              {dictionary.setting.discount.sidebar[lang]} {dictionary.universal.withname[lang]} <span className="font-semibold">{discountById.dis_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

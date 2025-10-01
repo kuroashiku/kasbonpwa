@@ -8,11 +8,17 @@ export const IS_DEMO = true;
 export const getItems = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/read`, body);
 };
+export const getItemsnew = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/item/readnew`, body);
+};
 export const getItemsBom = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/readforbom`, body);
 };
 export const saveItem = (body=ItemListModel()) => {
     return httpPost(`${API_HOST}/item/save`, body);
+};
+export const importItem = (body=ItemListModel()) => {
+    return httpPost(`${API_HOST}/item/import`, body);
 };
 export const deleteItem = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/update_delete`, body);
@@ -37,5 +43,14 @@ export const deleteBom = (body=GetItemsReqBody()) => {
 };
 export const checkCode = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/check_code`, body);
+};
+export const saveRak = (body=ItemListModel()) => {
+    return httpPost(`${API_HOST}/rak/save`, body);
+};
+export const deleteRak = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/rak/delete`, body);
+};
+export const getRak = (body=GetItemsReqBody()) => {
+    return httpPost(`${API_HOST}/rak/read`, body);
 };
 

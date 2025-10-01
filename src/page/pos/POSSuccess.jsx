@@ -4,6 +4,7 @@ import { capitalizeWords, formatThousandSeparator } from "../../util/formatter";
 import { ChevronLeftIcon } from "@heroicons/react/24/solid";
 import { useNavigate } from "react-router-dom";
 import POSInvoice from "./POSInvoice";
+import POSInvoiceTabel from "./POSInvoiceTabel";
 import ThermalPrinterEncoder from "thermal-printer-encoder";
 import { format } from "date-fns";
 import { PRINTER_STATE_NONE } from "../../constant/appCommon";
@@ -34,7 +35,10 @@ export default function POSSuccess({ exit }) {
     setPajakGlobalJSON,
     totalPayTemp,
     setTotalPayTemp,
-    totalPrice
+    totalPrice,
+    catatanGlobal,
+    setCatatanGlobal,
+    modeCil
   } = useContext(AppContext);
 
   const [moneyView, setMoneyView] = useState(
@@ -52,7 +56,9 @@ export default function POSSuccess({ exit }) {
   const [pajakView, setPajakView] = useState(
     pajakGlobal >= 0 && notaItemsCheckout.length == 0 ? pajakGlobal : notaItemsCheckout.pajak
   );
-
+  const [catatanView, setCatatanView] = useState(
+    catatanGlobal !="" && notaItemsCheckout.length == 0 ? catatanGlobal : notaItemsCheckout.catatan
+  );
   const [totalPayTempView] = useState(totalPayTemp);
   const [subtotalPayView] = useState(totalPrice);
 
@@ -67,12 +73,12 @@ export default function POSSuccess({ exit }) {
     cashback: cashback < 0 ? cashback * -1 : cashback,
     money: moneyView,
     discount: discountView,
-    note: "",
+    note: catatanView,
     totalPay: totalPayView,
     totalTemp: totalPayTempView,
     subtotalPay:subtotalPayView,
     tax: pajakView,
-    isPiutang: cashback < 0,
+    isPiutang: modeCil=="CIL"?true:false,
     isLaundry: cookies.lok_type == "laundry",
   };
 
@@ -262,6 +268,7 @@ export default function POSSuccess({ exit }) {
     setPajakGlobal(0);
     setDiskonGlobal(0);
     setTotalPayTemp(0);
+    setCatatanGlobal("");
     if(cookies.always_print&&printerState > PRINTER_STATE_NONE){
       printBill();
     }
@@ -295,8 +302,10 @@ export default function POSSuccess({ exit }) {
       {localStorage.getItem("checkout-prev") === "/" && (
         <div className="info text-center font-semibold text-light-blue-800">Pembayaran Berhasil!</div>
       )}
-
+      {cookies.lok_type=="laundry"?
+      <POSInvoiceTabel data={invoiceData} />:
       <POSInvoice data={invoiceData} />
+      }
     </div>
   );
 }

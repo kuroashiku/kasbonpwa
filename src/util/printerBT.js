@@ -41,7 +41,7 @@ export const connectPrinterBT = async () =>{
 		const activeDevice = await service.getCharacteristic(BT_WRITE_CODE);
 		return activeDevice;
 	}catch(err){
-		console.log('Could not connect BT Printer! ' + error);
+		console.log('Could not connect BT Printer! ' + err);
 		if(deviceHandle){
 			deviceHandle.gatt.disconnect();
 		}

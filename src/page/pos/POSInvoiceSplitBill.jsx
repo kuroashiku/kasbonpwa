@@ -1,14 +1,16 @@
 import { InvoicePOS } from "../../model/invoice";
 import { formatThousandSeparator } from "../../util/formatter";
-import { format } from "date-fns";
-export default function POSInvoiceSplitBill({ atribut, data, total, subtotal, money }) {
+import { format, setDefaultOptions } from "date-fns";
+import { id } from 'date-fns/locale'
 
+export default function POSInvoiceSplitBill({ atribut, data, total, subtotal, money }) {
+	setDefaultOptions({ locale: id })
 	const HeaderArea = () => {
 		return (
 			<div className="title-area text-center border-b-2 border-dotted border-gray-800 pb-2 mb-3">
 				<p className="nama text-[13px] font-semibold">{atribut.lokasi}</p>
 				<p className="alamat text-[11px] text-gray-700">{atribut.alamatLokasi}</p>
-				<p className="tanggal text-[11px] text-gray-700">{format(new Date(), "dd-MMM-yyyy-hh-mm-ss")}</p>
+				<p className="tanggal text-[11px] text-gray-700">{format(new Date(), "dd MMMM yyyy hh:mm")}</p>
 			</div>
 		);
 	};
@@ -21,7 +23,7 @@ export default function POSInvoiceSplitBill({ atribut, data, total, subtotal, mo
 			</div>
 		);
 	};
-	console.log(atribut);
+	console.log((money-total))
 	return (
 		<div className="mt-5 p-3 text-black lg:w-[219px] max-w-[219px] pb-5 mx-auto border border-gray-800">
 			<HeaderArea />
@@ -79,8 +81,8 @@ export default function POSInvoiceSplitBill({ atribut, data, total, subtotal, mo
 						<p>{formatThousandSeparator(money)}</p>
 					</div>
 					<div className="flex justify-between">
-						<p>{!data.isPiutang ? "Kembali" : "Kurang"}</p>
-						<p>{data.cashback ? formatThousandSeparator(data.cashback) : 0}</p>
+						<p>{(money-total)>=0 ? "Kembali" : "Kurang"}</p>
+						<p>{!(money-total)==0 ? formatThousandSeparator((money-total) < 0 ? (money-total) * -1 : (money-total)) : 0}</p>
 					</div>
 				</div>
 			

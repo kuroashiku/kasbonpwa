@@ -10,6 +10,7 @@ export default function InputSimple({
   disabled,
   autoFocus = false,
   maxlength = 100,
+  type="text"
 }) {
   return (
     <Fragment>
@@ -17,6 +18,7 @@ export default function InputSimple({
         color={error ? "red" : "teal"}
         value={value}
         label={label}
+        type={type}
         name={name}
         onChange={onChange}
         disabled={disabled}

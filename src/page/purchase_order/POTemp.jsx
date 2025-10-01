@@ -1,16 +1,5 @@
-import {
-  Button,
-  Dialog,
-  DialogHeader,
-  DialogBody,
-  DialogFooter,
-  Input,
-  List,
-  ListItem,
-  IconButton,
-  Navbar,
-  Typography,
-} from "@material-tailwind/react";
+import { Button, Dialog, DialogHeader, DialogBody, DialogFooter, Input, List, ListItem, IconButton, Navbar,
+  Typography,} from "@material-tailwind/react";
 import { Fragment, useContext, useEffect, useRef, useState, useCallback } from "react";
 import SearchNavbar from "../../lib/SearchNavbar";
 import { AdjustmentsVerticalIcon, Bars3Icon, PlusCircleIcon, TruckIcon } from "@heroicons/react/24/outline";
@@ -41,6 +30,7 @@ export default function POTemp() {
   const [loading, setLoading] = useState(true);
   const [keyword, setKeyword] = useState("");
   const [keywordItem, setKeywordItem] = useState("");
+  const [keywordSupp, setKeywordSupp] = useState("");
   const [purchaseorders, setPurchaseorders] = useState([POListModel]);
   const [suppliers, setSuppliers] = useState([]);
   const [openFilter, setOpenFilter] = useState(false);
@@ -73,12 +63,16 @@ export default function POTemp() {
     setKeywordItem(searchKey);
   };
 
+  const handleFilterSupp = (searchKey) => {
+    setKeywordSupp(searchKey);
+  };
+
   const openDrawerRight = () => setOpenFilter(true);
   // const closeDrawerRight = () => setOpenFilter(false);
 
   const handleResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setPurchaseorders(data);
     }
@@ -142,6 +136,7 @@ export default function POTemp() {
     setPoSuppNama(supp.sup_nama);
     _poById.po_sup_id = supp.sup_id;
     _poById.sup_id = supp.sup_id;
+    console.log(_poById)
     setPoById(_poById);
     setOpenSupp(false);
   };
@@ -179,7 +174,7 @@ export default function POTemp() {
     init();
   }
 
-  function setItem(item, index) {
+  const setItem = useCallback(async (item, index) => {
     let foundItem = false;
     console.log(item);
     const _poItemList = poitemlist.map((_item) => {
@@ -193,14 +188,36 @@ export default function POTemp() {
     });
     if (!foundItem) {
       item.qty = 1;
+      item.qtytemp = 1;
       item.po_id = poById.po_id;
       item.total = parseFloat(item.satuan0hpp);
       _poItemList.push(item);
     }
+    else{
+      item.qty = item.qty+1;
+      item.qtytemp = item.qtytemp+1;
+      item.po_id = poById.po_id;
+      item.total = parseFloat(item.satuan0hpp*item.qty);
+      //_poItemList.push(item);
+    }
     setPoitemlist(_poItemList);
-    setOpenItem(false);
+    //setOpenItem(false);
     // setPoitemflag(true)
-  }
+  }, [poitemlist]);
+
+  const handleBack = useCallback(
+    async (item) => {
+   
+      
+    const _poItemList = poitemlist.map((_item) => {
+      _item.qtytemp=0;
+      return _item;
+    });
+    setPoitemlist(_poItemList);
+     setOpenItem(false)
+    },
+    [poitemlist]
+  );
 
   const saveData = useCallback(async () => {
     console.log(poitemlist);
@@ -316,24 +333,22 @@ export default function POTemp() {
 
   const handleResponseItem = ({ data, error }) => {
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setItemlist(convertItemListToCheckout(data));
     }
   };
 
+  const handleResponseSupplier = ({ data, error }) => {
+    if (error) {
+      alert(dictionary.universal.notfound[lang]);
+    } else {
+      setSuppliers(data);
+    }
+  };
+
+
   useEffect(() => {
-    const initsupp = async () => {
-      setSuppliers([]);
-      setPage(1);
-      const { data, error } = await getSupplier({
-        com_id: cookies.com_id,
-      });
-      if (!error) {
-        setSuppliers(data);
-      }
-    };
-    initsupp();
     if (keywordItem && keywordItem.length > 1) {
       const orderSearch = setTimeout(async () => {
         setPage(1);
@@ -369,6 +384,34 @@ export default function POTemp() {
     }
   }, [keywordItem, filters]);
 
+  useEffect(() => {
+    setSuppliers([]);
+    if (keywordSupp && keywordSupp.length > 1) {
+      const orderSearch = setTimeout(async () => {
+        setLoading(true);
+        const { data, error } = await getSupplier({
+          com_id: cookies.com_id,
+          key_val: keywordSupp,
+        });
+        handleResponseSupplier({ data, error });
+        setLoading(false);
+      }, TIME_SEARCH_DEBOUNCE);
+      return () => {
+        clearTimeout(orderSearch);
+      };
+    } else if (!keywordItem) {
+      const init = async () => {
+        setItemlist([]);
+        setLoading(true);
+        const { data, error } = await getSupplier({
+          com_id: cookies.com_id,
+        });
+        handleResponseSupplier({ data, error });
+        setLoading(false);
+      };
+      init();
+    }
+  }, [keywordSupp]);
   //in case of user scrolling
   useEffect(() => {
     if (purchaseorders[0] && purchaseorders[0].po_id && !filters[0]) {
@@ -388,7 +431,7 @@ export default function POTemp() {
 
   const handleAppendResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       const _po = data;
       setPurchaseorders([...purchaseorders, ..._po]);
@@ -413,7 +456,7 @@ export default function POTemp() {
 
   const handleAppendResponseItem = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       const _item = convertItemListToCheckout(data);
       setItemlist([...itemlist, ..._item]);
@@ -430,11 +473,14 @@ export default function POTemp() {
       ? setNewOpen(!newOpen)
       : setNewOpen(false);
   }
-
-  function handleOpenItem(item) {
-    //setTransById(item);
+const handleOpenItem = useCallback(async (item) => {
+    const _poItemList = poitemlist.map((_item) => {
+      item.qtytemp =0;
+      return _item;
+    });
+    setPoitemlist(_poItemList);
     setOpenItem(true);
-  }
+  }, [poitemlist]);
 
   function handleOpenSupplier(item) {
     //setTransById(item);
@@ -499,10 +545,15 @@ export default function POTemp() {
             >
               <div className="flex items-center">
                 <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
+                  <div className="justify-items-center lowercase">
                   <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
                 </IconButton>
                 <div className="mx-2 flex-grow">
-                  <SearchNavbar onSearch={handleFilter} value={keyword} label="No. Purchase Order" />
+                  <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.po[lang]} />
                 </div>
                 <IconButton size="md" variant="text" onClick={openDrawerRight}>
                   <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
@@ -556,7 +607,7 @@ export default function POTemp() {
               {!poById.sup_id ? "Supplier Kosong" : poSuppNama}
             </div>
 
-            <List className="divide-y divide-dashed divide-gray-400 h-[100dvh]">
+            <List className="divide-y divide-dashed overflow-auto divide-gray-400 h-[80dvh] pb-32">
               {poitemlist?.map((i, index) => {
                 return (
                   <ListItem key={index} className="" onClick={() => (poById.po_tgapprove ? null : handleInput(i))}>
@@ -634,7 +685,7 @@ export default function POTemp() {
                   disabled={poitemlist.length > 0 && poById.sup_id ? false : true}
                   className="w-full"
                 >
-                  <span>Simpan</span>
+                  <span>{dictionary.universal.save[lang]}</span>
                 </Button>
               )}
             </div>
@@ -644,25 +695,25 @@ export default function POTemp() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Item <span className="font-semibold">{poById.po_nomor}</span> akan dihapus. Apakah anda yakin?
+              PO {dictionary.universal.withname[lang]} <span className="font-semibold">{poById.po_nomor}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
 
         <Dialog open={openItem} handler={handleOpenItem}>
-          <DialogHeader className="text-lg text-blue-gray-700">Tambah Item Ke PO</DialogHeader>
+          <DialogHeader className="text-lg text-blue-gray-700">{dictionary.dialogheader.additemtopo[lang]}</DialogHeader>
           <DialogBody className="max-h-[70vh] p-0 overflow-y-auto">
             <div className="search-bar w-[90%] mx-auto mt-1">
-              <SearchNavbar onSearch={handleFilterItem} value={keywordItem} label="Cari Item" />
+              <SearchNavbar onSearch={handleFilterItem} value={keywordItem} label={dictionary.search.item[lang]} />
             </div>
             <div className="max-h-[60vh] px-2 overflow-y-auto">
               <List className="divide-y divide-dashed divide-gray-400">
@@ -677,15 +728,18 @@ export default function POTemp() {
             </div>
           </DialogBody>
           <DialogFooter>
-            <Button variant="gradient" color="blue-gray" onClick={() => setOpenItem(false)} className="mr-1">
-              <span>Cancel</span>
+            <Button variant="gradient" color="blue-gray" onClick={handleBack} className="mr-1">
+              <span>{dictionary.universal.back[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
 
         <Dialog open={openSupp} handler={handleOpenSupplier}>
-          <DialogHeader className="text-lg text-blue-gray-700">Tambah Supplier Ke PO</DialogHeader>
+          <DialogHeader className="text-lg text-blue-gray-700">{dictionary.dialogheader.addsuppliertopo[lang]}</DialogHeader>
           <DialogBody className="max-h-[70vh] p-0 overflow-y-auto">
+            <div className="search-bar w-[90%] mx-auto mt-1">
+              <SearchNavbar onSearch={handleFilterSupp} value={keywordSupp} label={dictionary.search.supplier[lang]} />
+            </div>
             <List className="divide-y divide-dashed divide-gray-400">
               {suppliers?.map((i, index) => {
                 return (

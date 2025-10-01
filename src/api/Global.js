@@ -5,10 +5,11 @@ export const API_HOST = import.meta.env.VITE_API_HOST;
 export const httpGet = async (url) => {
     try{
         const headers = {
-            'Content-Type': 'application/json'
+            'Content-Type': 'application/json',
+            'Accept': 'application/json'
         }
-        if(window.token){
-            headers['Authorization'] = `Bearer ${window.token}`;
+        if(token!=''){
+            headers['Authorization'] = `Bearer ${token}`;
         }
         const response = await fetch(url, {
             method: 'GET',

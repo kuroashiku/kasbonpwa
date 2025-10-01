@@ -18,6 +18,7 @@ import { Bars3Icon, PlusCircleIcon } from "@heroicons/react/24/outline";
 import { TaxListModel } from "../../model/tax";
 import { useNavigate } from "react-router-dom";
 import LoadingOverlay from "../../lib/LoadingOverlay";
+import { dictionary } from "../../constant/appDictionary";
 import { topic } from "../../constant/appTopics";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
 import InputSimple from "../../lib/InputSimple";
@@ -25,7 +26,7 @@ import InputNumber from "../../lib/InputNumber";
 import { PencilSquareIcon } from "@heroicons/react/16/solid";
 
 export default function TaxList() {
-  const { setMenuOpen, cookies } = useContext(AppContext);
+  const { setMenuOpen, cookies, lang } = useContext(AppContext);
   const [listPadding, setListPadding] = useState("20px");
   const [loading, setLoading] = useState(true);
   const [taxs, setTaxs] = useState([TaxListModel()]);
@@ -54,13 +55,13 @@ export default function TaxList() {
         ? setOpen(!open)
         : setOpen(false);
       setTaxById(item);
-      settxtTitle("Edit Pajak");
+      settxtTitle("Edit "+dictionary.setting.tax.sidebar[lang]);
       setMode(2);
     } else {
       setReadonly(true);
       setOpen(!open);
       setTaxById(item);
-      settxtTitle("Detail Pajak");
+      settxtTitle("Detail "+dictionary.setting.tax.sidebar[lang]);
       setMode(1);
     }
   }
@@ -79,7 +80,7 @@ export default function TaxList() {
   function handleAdd() {
     setTaxById({ paj_lok_id: cookies.lok_id, paj_id: -1 });
     setReadonly(false);
-    settxtTitle("Tambah Pajak");
+    settxtTitle(dictionary.universal.add[lang]+" "+dictionary.setting.tax.sidebar[lang]);
     setMode(3);
     cookies.role_create.length == 0 && cookies.role_dst.length == 0
       ? setOpen(!open)
@@ -101,7 +102,7 @@ export default function TaxList() {
     setItemDisplay(null);
     const { data, error } = await deleteTax({ paj_id: taxId });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
@@ -109,7 +110,7 @@ export default function TaxList() {
       setTaxId(-1);
       const { data, error } = await getTax({ lok_id: cookies.lok_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setTaxs(data);
       }
@@ -121,14 +122,14 @@ export default function TaxList() {
     setItemDisplay(null);
     const { data, error } = await saveTax(taxById);
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       setTaxs([]);
       const { data, error } = await getTax({ lok_id: cookies.lok_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setTaxs(data);
       }
@@ -142,7 +143,7 @@ export default function TaxList() {
     }
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setTaxs(data);
       }
@@ -185,7 +186,12 @@ export default function TaxList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
             <div className="flex gap-3 items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="text-base font-semibold text-[#606060]">Pajak</div>
             </div>
@@ -231,7 +237,7 @@ export default function TaxList() {
             <div className="mb-4">
               <InputSimple
                 value={taxById.paj_nama}
-                label="Nama Pajak"
+                label={dictionary.dialog.tax.name[lang]}
                 onChange={(evt) => handleChange(evt, "paj_nama")}
                 disabled={readonly}
               />
@@ -239,7 +245,7 @@ export default function TaxList() {
             <div className="mb-4">
               <InputNumber
                 value={taxById.paj_value}
-                label="Nilai Pajak"
+                label={dictionary.dialog.tax.value[lang]}
                 onChange={(evt) => handleChange(evt, "paj_value")}
                 disabled={readonly}
                 icon="%"
@@ -248,7 +254,7 @@ export default function TaxList() {
           </DialogBody>
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button
               variant="gradient"
@@ -256,7 +262,7 @@ export default function TaxList() {
               onClick={mode <= 1 ? () => handleNewOpen(taxById.paj_id) : saveData}
               className="w-full flex-1"
             >
-              <span>{mode <= 1 ? "Hapus" : "Konfirmasi"}</span>
+              <span>{mode <= 1 ? dictionary.universal.delete[lang] : dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -264,16 +270,16 @@ export default function TaxList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Pajak <span className="font-semibold">{taxById.paj_nama}</span> akan dihapus. Apakah anda yakin?
+              {dictionary.setting.tax.sidebar[lang]} {dictionary.universal.withname[lang]} <span className="font-semibold">{taxById.paj_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

@@ -237,7 +237,7 @@ export default function POSCheckoutBill() {
 		const initcustomer = async () => {
 			const { data, error } = await getCustomers({ com_id: cookies.com_id });
 			if (error) {
-				alert("Data tidak ditemukan");
+				alert(dictionary.universal.notfound[lang]);
 			} else {
 				setCustomers(data);
 			}
@@ -344,6 +344,11 @@ export default function POSCheckoutBill() {
 
 	const handleDraft = useCallback(async () => {
 		let filterProps = {};
+		const _newitemsCheckout = cloneDeep(itemsCheckout);
+		const _itemsCheckout = _newitemsCheckout.map((_item) => {
+		_item.service_level_satuan0=JSON.stringify(_item.service_level_satuan0);
+		return _item;
+		});
 		if (tableGlobal != "") {
 			filterProps = {
 				mej_id_new: parseInt(tableGlobal),
@@ -366,15 +371,15 @@ export default function POSCheckoutBill() {
 			initcustomer();
 		}
 		const { data, error } = await draftPos({
-			rows: itemsCheckout,
-			total: totalPrice,
+			rows: _itemsCheckout,
+			total: totalPay,
 			kas_id: cookies.kas_id,
 			kas_nama: cookies.kas_nama,
 			lok_id: cookies.lok_id,
 			cus_id: customerGlobal == "" ? 0 : parseInt(customerGlobal),
 			cus_nama: "",
 			catatan: catatanGlobal,
-			diskon: diskonGlobal,
+			diskon: diskonGlobal==""?0:diskonGlobal,
 			disnom: 0,
 			mej_id: tableGlobal == "" ? 0 : parseInt(tableGlobal),
 			pajak: pajakGlobal,
@@ -382,7 +387,7 @@ export default function POSCheckoutBill() {
 			...filterProps,
 		});
 		if (error) {
-			alert("Gagal login");
+			alert("Gagal Simpan Draft");
 		} else {
 			navigate(topic.cashier.route);
 			setItemsCheckout([]);
@@ -393,7 +398,7 @@ export default function POSCheckoutBill() {
 			setTableGlobal("");
 			setCustomerGlobal("");
 		}
-	}, [itemsCheckout, tableGlobal, customerGlobal,pajakGlobalJSON]);
+	}, [itemsCheckout, tableGlobal, customerGlobal,pajakGlobalJSON,totalPay]);
 
 	const handleCustomerNew = (evt) => {
 		setCustomerNew(evt.target.value);
@@ -662,14 +667,14 @@ export default function POSCheckoutBill() {
 				<div className="input-area flex flex-col gap-3 p-2 lg:w-[40%]">
 					<div className="Input-Item Pajak">
 						{!taxs.length ? (
-							<InputNumber label="Pajak" disabled={true} />
+							<InputNumber label={dictionary.setting.tax.sidebar[lang]} disabled={true} />
 						) : (
 							<Select
 								className="h-10 min-w-[200px]"
 								value={`${pajakGlobalId}`}
                 				onChange={handlePajakGlobal}
 								color="teal"
-								label="Pajak"
+								label={dictionary.setting.tax.sidebar[lang]}
 							>
 								{taxs.map((p) => (
 									<Option value={p.paj_id} key={p.paj_id}>
@@ -683,7 +688,7 @@ export default function POSCheckoutBill() {
 					<div className="Input-Item Catatan">
 						<InputSimple
 							value={catatanGlobal}
-							label="Catatan"
+							label={dictionary.stock.uom.note[lang]}
 							onChange={(evt) => {
 								evt.preventDefault();
 								handleCatatanGlobal(evt);
@@ -696,7 +701,7 @@ export default function POSCheckoutBill() {
 							{isNominalGlobal ? (
 								<InputNumber
 									value={diskonGlobal}
-									label="Diskon Global"
+									label={dictionary.setting.discountglobal.sidebar[lang]}
 									onChange={(evt) => {
 										evt.preventDefault();
 										handleDiskonGlobal(evt);
@@ -706,7 +711,7 @@ export default function POSCheckoutBill() {
 							) : (
 								<>
 									{!diskonsGlobal.length ? (
-										<InputNumber label="Diskon Global" disabled={true} />
+										<InputNumber label={dictionary.setting.discountglobal.sidebar[lang]} disabled={true} />
 									) : (
 										<Select
 											className="h-10"
@@ -714,7 +719,7 @@ export default function POSCheckoutBill() {
 											value={`${diskonGlobal}`}
 											onChange={setDiskonGlobal}
 											color="teal"
-											label="Pilih Diskon"
+											label={dictionary.choose.discount[lang]}
 										>
 											{diskonsGlobal.map((p) => (
 												<Option value={p.dis_value} key={p.dis_id}>
@@ -744,7 +749,7 @@ export default function POSCheckoutBill() {
 							{switchValueCustomer ? (
 								<InputSimple
 									value={customerNew}
-									label="Pelanggan Baru"
+									label={dictionary.new.customer[lang]}
 									onChange={(evt) => {
 										evt.preventDefault();
 										handleCustomerNew(evt);
@@ -753,14 +758,14 @@ export default function POSCheckoutBill() {
 							) : (
 								<>
 									{!customers.length ? (
-										<InputNumber label="Pelanggan" disabled={true} />
+										<InputNumber label={dictionary.customer.sidebar[lang]} disabled={true} />
 									) : (
 										<Select
 											id="customer"
 											value={`${customerGlobal}`}
 											onChange={setCustomerGlobal}
 											color="teal"
-											label={`Pilih ${dictionary.customer.sidebar[lang]}`}
+											label={dictionary.choose.customer[lang]}
 										>
 											{customers.map((p) => (
 												<Option value={p.cus_id} key={p.cus_id}>
@@ -784,7 +789,7 @@ export default function POSCheckoutBill() {
 					{cookies.lok_type == "resto" && (
 						<div className="Input-Item Meja">
 							{!tables.length ? (
-								<InputNumber label="Meja" disabled={true} />
+								<InputNumber label={dictionary.table.sidebar[lang]} disabled={true} />
 							) : (
 								<Select
 									className="h-10"
@@ -792,7 +797,7 @@ export default function POSCheckoutBill() {
 									value={`${tableGlobal}`}
 									onChange={setTableGlobal}
 									color="teal"
-									label="Meja"
+									label={dictionary.table.sidebar[lang]}
 								>
 									{tables.map((p) => (
 										<Option
@@ -812,14 +817,14 @@ export default function POSCheckoutBill() {
 			</div>
 
 			<Dialog open={open} handler={handleOpen} size="md">
-				<DialogHeader className="border-b-2">DIskon</DialogHeader>
+				<DialogHeader className="border-b-2">{dictionary.setting.discount.sidebar[lang]}</DialogHeader>
 				<DialogBody className="overflow-auto pb-10">
 					<div className="grid grid-cols-5 gap-6 p-2 h-32">
 						<div className="col-span-3">
 							{isNominal ? (
 								<InputNumber
 									value={diskon}
-									label="Diskon"
+									label={dictionary.setting.discount.sidebar[lang]}
 									onChange={(evt) => {
 										evt.preventDefault();
 										handleDiskonInput(evt);
@@ -830,7 +835,7 @@ export default function POSCheckoutBill() {
 							) : (
 								<div>
 									{!diskons.length ? (
-										<InputNumber label="Diskon" disabled={true} />
+										<InputNumber label={dictionary.setting.discount.sidebar[lang]} disabled={true} />
 									) : (
 										<Select
 											className="h-10"
@@ -838,7 +843,7 @@ export default function POSCheckoutBill() {
 											value={`${diskonSelect}`}
 											onChange={handleDiskonSelect}
 											color="teal"
-											label="Diskon"
+											label={dictionary.setting.discount.sidebar[lang]}
 										>
 											{diskons.map((p) => (
 												<Option value={p.dis_value} key={p.dis_id}>
@@ -851,7 +856,7 @@ export default function POSCheckoutBill() {
 							)}
 						</div>
 						<div className="col-span-2">
-							<div className="text-xs ml-2 text-center">Mode Persentase</div>
+							<div className="text-xs ml-2 text-center">{dictionary.universal.percentagemode[lang]}</div>
 							<div className="flex justify-center">
 								{!switchValue ? (
 									<Switch color="teal" defaultChecked disabled={true} />
@@ -864,7 +869,7 @@ export default function POSCheckoutBill() {
 				</DialogBody>
 				<DialogFooter className="border-t-2">
 					<Button variant="gradient" color="red" onClick={() => setOpen(false)} className="mr-1">
-						<span>Back</span>
+						<span>{dictionary.universal.back[lang]}</span>
 					</Button>
 				</DialogFooter>
 			</Dialog>

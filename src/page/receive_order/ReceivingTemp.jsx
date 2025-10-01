@@ -104,7 +104,7 @@ export default function ReceivingList() {
 
 	const handleResponse = ({ data, error }) => {
 		if (error) {
-			alert("Terjadi Kesalahan");
+			alert(dictionary.universal.erroroccured[lang]);
 		} else {
 			setReceivings(data);
 		}
@@ -193,26 +193,27 @@ export default function ReceivingList() {
 		_rcvById.po_nomor = item.nomor;
 		_rcvById.rcv_po_id = item.po_id;
 		_rcvById.sup_nama = item.sup_nama;
-		item.poitems.map((_poitem) => {
-			_poitem.satuan0hrg =
-				_poitem.satuan0 == _poitem.satuan1
-					? _poitem.satuan1hrg
-					: _poitem.satuan0 == _poitem.satuan2
-					? _poitem.satuan2hrg
-					: _poitem.satuan3hrg;
-			_poitem.satuan0hpp =
-				_poitem.satuan0 == _poitem.satuan1
-					? _poitem.satuan1hpp
-					: _poitem.satuan0 == _poitem.satuan2
-					? _poitem.satuan2hpp
-					: _poitem.satuan3hpp;
-			_poitem.satuan0of1 =
-				_poitem.satuan0 == _poitem.satuan1
-					? 1
-					: _poitem.satuan0 == _poitem.satuan2
-					? _poitem.satuan2of1
-					: _poitem.satuan3of1;
-		});
+		//prod ada
+		// item.poitems.map((_poitem) => {
+		// 	_poitem.satuan0hrg =
+		// 		_poitem.satuan0 == _poitem.satuan1
+		// 			? _poitem.satuan1hrg
+		// 			: _poitem.satuan0 == _poitem.satuan2
+		// 			? _poitem.satuan2hrg
+		// 			: _poitem.satuan3hrg;
+		// 	_poitem.satuan0hpp =
+		// 		_poitem.satuan0 == _poitem.satuan1
+		// 			? _poitem.satuan1hpp
+		// 			: _poitem.satuan0 == _poitem.satuan2
+		// 			? _poitem.satuan2hpp
+		// 			: _poitem.satuan3hpp;
+		// 	_poitem.satuan0of1 =
+		// 		_poitem.satuan0 == _poitem.satuan1
+		// 			? 1
+		// 			: _poitem.satuan0 == _poitem.satuan2
+		// 			? _poitem.satuan2of1
+		// 			: _poitem.satuan3of1;
+		// });
 		setRcvpolist(item.poitems);
 		setRcvById(_rcvById);
 		setOpen(false);
@@ -349,7 +350,7 @@ export default function ReceivingList() {
 
 	const handleResponseItem = ({ data, error }) => {
 		if (error) {
-			alert("Data tidak ditemukan");
+			alert(dictionary.universal.notfound[lang]);
 		} else {
 			const temppo = data.filter(function (item) {
 				return item.tgapprove !== null;
@@ -416,7 +417,7 @@ export default function ReceivingList() {
 
 	const handleAppendResponse = ({ data, error }) => {
 		if (error) {
-			alert("Terjadi Kesalahan");
+			alert(dictionary.universal.erroroccured[lang]);
 		} else {
 			const _rcv = data;
 			setReceivings([...receivings, ..._rcv]);
@@ -442,7 +443,7 @@ export default function ReceivingList() {
 
 	const handleAppendResponseItem = ({ data, error }) => {
 		if (error) {
-			alert("Terjadi Kesalahan");
+			alert(dictionary.universal.erroroccured[lang]);
 		} else {
 			const _po = data;
 			setPolist([...polist, ..._po]);
@@ -482,7 +483,7 @@ export default function ReceivingList() {
 			kas_id: cookies.kas_id,
 		});
 		if (error) {
-			alert("Data tidak ditemukan");
+			alert(dictionary.universal.notfound[lang]);
 		} else {
 			setLoading(true);
 			setNewOpen(false);
@@ -518,10 +519,15 @@ export default function ReceivingList() {
 						>
 							<div className="flex items-center">
 								<IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-									<Bars3Icon className="h-6 w-6 stroke-2" />
+									<div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
 								</IconButton>
 								<div className="mx-2 flex-grow">
-									<SearchNavbar onSearch={handleFilter} value={keyword} label="No. Receive Order" />
+									<SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.rcv[lang]} />
 								</div>
 								<IconButton size="md" variant="text" onClick={openDrawerRight}>
 									<AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
@@ -628,7 +634,7 @@ export default function ReceivingList() {
 							</Button>
 							{rcvById.rcv_status=="PAID" ? null : (rcvpolist.length>0?
 								<Button variant="gradient" color="green" onClick={saveData} className="w-full">
-									<span>Simpan</span>
+									<span>{dictionary.universal.save[lang]}</span>
 								</Button>:null
 							)}
 						</div>
@@ -636,10 +642,10 @@ export default function ReceivingList() {
 				)}
 
 				<Dialog open={open} handler={handleAddItem}>
-					<DialogHeader className="text-lg text-blue-gray-700">Tambah PO ke RCV</DialogHeader>
+					<DialogHeader className="text-lg text-blue-gray-700">{dictionary.dialogheader.addpotorcv[lang]}</DialogHeader>
 					<DialogBody className="p-0">
 						<div className="search-bar w-[90%] mx-auto mt-1">
-							<SearchNavbar onSearch={handleFilterItem} value={keywordItem} label="No. Receive Order" />
+							<SearchNavbar onSearch={handleFilterItem} value={keywordItem} label={dictionary.search.po[lang]} />
 						</div>
 
 						<div className="max-h-[60vh] overflow-y-auto">
@@ -650,7 +656,7 @@ export default function ReceivingList() {
 					</DialogBody>
 					<DialogFooter>
 						<Button variant="gradient" color="red" onClick={() => setOpen(false)} className="mr-1">
-							<span>Cancel</span>
+							<span>{dictionary.universal.cancel[lang]}</span>
 						</Button>
 					</DialogFooter>
 				</Dialog>
@@ -668,16 +674,16 @@ export default function ReceivingList() {
 				{/* <Dialog open={newOpen} handler={handleNewOpen}>
 					<DialogBody>
 						<div className="text-center my-6">
-							Item <span className="font-semibold">{poById.po_nomor}</span> akan dihapus. Apakah anda yakin?
+							Item {dictionary.universal.withname[lang]} <span className="font-semibold">{poById.po_nomor}</span> {dictionary.universal.deleteMessage[lang]}
 						</div>
 					</DialogBody>
 
 					<DialogFooter className="flex gap-3 justify-between">
 						<Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-							<span>Batal</span>
+							<span>{dictionary.universal.cancel[lang]}</span>
 						</Button>
 						<Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-							<span>Hapus</span>
+							<span>{dictionary.universal.delete[lang]}</span>
 						</Button>
 					</DialogFooter>
 				</Dialog> */}

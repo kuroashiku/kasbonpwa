@@ -25,6 +25,19 @@ import LoadingOverlay from "../../lib/LoadingOverlay";
 import { topic } from "../../constant/appTopics";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
 import InputSimple from "../../lib/InputSimple";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+//import { getDatabase } from "firebase/database";
+import { getAnalytics } from "firebase/analytics";
+import { database } from '../../lib/FirebaseConfig';
+import { ref, onValue, push } from "firebase/database";
+// import { database } from "./firebase";
+
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
 
 export default function SupplierList() {
   const { setMenuOpen, filters, currency, setFilters, lang, dataLogin, cookies } = useContext(AppContext);
@@ -41,11 +54,48 @@ export default function SupplierList() {
   const [txtTitle, settxtTitle] = useState("");
   const [mode, setMode] = useState(0);
   const [keyword, setKeyword] = useState("");
+  const [users, setUsers] = useState([]);
   const navigate = useNavigate();
 
   const handleFilter = (searchKey) => {
     setKeyword(searchKey);
   };
+  // const firebaseConfig = {
+  //   apiKey: "AIzaSyB7I2kk2qDH1dTSiXJSDd8sNCuJ28HOvw0",
+  //   authDomain: "kasbon-3afd3.firebaseapp.com",
+  //   databaseURL: "https://kasbon-3afd3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  //   projectId: "kasbon-3afd3",
+  //   storageBucket: "kasbon-3afd3.firebasestorage.app",
+  //   messagingSenderId: "163834327347",
+  //   appId: "1:163834327347:web:cfdbb347cdacf9a28e8e46",
+  //   measurementId: "G-QVFMZLZQ16"
+  // };
+  // const app = initializeApp(firebaseConfig);
+  // const database = getDatabase(app);
+  // Initialize Firebase
+  // const app = initializeApp(firebaseConfig);
+  // const analytics = getAnalytics(app);
+  // const db = getFirestore(app);
+  // useEffect(() => {
+  //   const usersRef = ref(database, "users"); // reference to the "users" node
+
+  //   const unsubscribe = onValue(usersRef, (snapshot) => {
+  //     const data = snapshot.val();
+  //     if (data) {
+  //       const usersArray = Object.entries(data).map(([key, value]) => ({
+  //         id: key,
+  //         ...value,
+  //       }));
+  //       alert(usersArray);
+  //       setUsers(usersArray);
+  //     } else {
+  //       setUsers([]);
+  //     }
+  //   });
+
+    // Cleanup the listener
+  //   return () => unsubscribe();
+  // }, []);
 
   function handleOpen(item, setedit, index) {
     //setitmindex(index)
@@ -59,7 +109,7 @@ export default function SupplierList() {
         ? setOpen(!open)
         : setOpen(false);
       setSupplierById(item);
-      settxtTitle("Ubah Supplier");
+      settxtTitle("Edit Supplier");
       setMode(2);
     } else {
       setReadonly(true);
@@ -82,7 +132,7 @@ export default function SupplierList() {
   function handleAdd() {
     setSupplierById({ sup_com_id: cookies.com_id, sup_id: -1 });
     setReadonly(false);
-    settxtTitle("Tambah Supplier");
+    settxtTitle(dictionary.universal.add[lang]+" Supplier");
     setMode(3);
     cookies.role_create.length == 0 && cookies.role_dst.length == 0
       ? setOpen(!open)
@@ -105,7 +155,7 @@ export default function SupplierList() {
     setItemDisplay(null);
     const { data, error } = await deleteSupplier({ sup_id: supplierId });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
@@ -113,7 +163,7 @@ export default function SupplierList() {
       setSupplierId(-1);
       const { data, error } = await getSupplier({ com_id: cookies.com_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setSuppliers(data);
       }
@@ -125,14 +175,14 @@ export default function SupplierList() {
     setItemDisplay(null);
     const { data, error } = await saveSupplier(supplierById);
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       setSuppliers([]);
       const { data, error } = await getSupplier({ com_id: cookies.com_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setSuppliers(data);
       }
@@ -146,7 +196,7 @@ export default function SupplierList() {
     }
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setSuppliers(data);
       }
@@ -188,10 +238,15 @@ export default function SupplierList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={handleFilter} value={keyword} label={"Supplier"} />
+                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.supplier[lang]} />
               </div>
             </div>
           </Navbar>
@@ -244,7 +299,7 @@ export default function SupplierList() {
             <div className="mb-4">
               <InputSimple
                 value={supplierById.sup_nama}
-                label="Nama"
+                label={dictionary.dialog.supplier.name[lang]}
                 name="sup_nama"
                 onChange={handleChange}
                 disabled={readonly}
@@ -254,7 +309,7 @@ export default function SupplierList() {
             <div className="mb-4">
               <InputSimple
                 value={supplierById.sup_wa}
-                label="Nomor WA"
+                label={dictionary.dialog.supplier.wa[lang]}
                 name="sup_wa"
                 onChange={handleChange}
                 disabled={readonly}
@@ -264,7 +319,7 @@ export default function SupplierList() {
             <div className="mb-4">
               <Textarea
                 value={supplierById.sup_alamat}
-                label="Alamat"
+                label={dictionary.dialog.supplier.address[lang]}
                 name="sup_alamat"
                 onChange={handleChange}
                 disabled={readonly}
@@ -273,7 +328,7 @@ export default function SupplierList() {
           </DialogBody>
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
-              Batal
+              {dictionary.universal.cancel[lang]}
             </Button>
             <Button
               variant="gradient"
@@ -281,7 +336,7 @@ export default function SupplierList() {
               onClick={mode <= 1 ? () => handleNewOpen(supplierById.sup_id) : saveData}
               className="w-full flex-1"
             >
-              <span>{mode <= 1 ? "Hapus" : "Confirm"}</span>
+              <span>{mode <= 1 ? dictionary.universal.delete[lang] : dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -289,16 +344,16 @@ export default function SupplierList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Supplier <span className="font-semibold">{supplierById.sup_nama}</span> akan dihapus. Apakah anda yakin?
+              Supplier {dictionary.universal.withname [lang]} <span className="font-semibold">{supplierById.sup_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

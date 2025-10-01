@@ -17,7 +17,8 @@ import { formatDate, formatRangeDate, formatThousandSeparator } from "../../util
 import InputMoney from "../../lib/InputMoney";
 import POSSuccess from "../pos/POSSuccess";
 import POSSuccessSplitBill from "../pos/POSSuccessSplitBill";
-import {} from "@heroicons/react/16/solid";
+import { FilterItemModel } from "../../model/filter";
+import { BuildingLibraryIcon } from "@heroicons/react/24/solid";
 
 export default function Transaction() {
   const { setMenuOpen, filters, setFilters, lang, cookies, rowsPerPage, currency, setItemsCheckout,
@@ -45,72 +46,94 @@ export default function Transaction() {
   const [totalitem, setTotalitem] = useState(0);
   const [totalnominal, setTotalnominal] = useState(0);
   const [transCheckId, setTransCheckId] = useState([]);
+  const [transCheckNmr, setTransCheckNmr] = useState([]);
   //const [payLoading, setPayLoading] = useState(false);
 
-  // useEffect(() => {
-  //   const _dateFilter = filters.find((f) => f.key === "date");
-  //   let filterProps = {};
-  //   if (_dateFilter) {
-  //     if (_dateFilter.value) {
-  //       //single date
-  //       const datepart = formatDate(_dateFilter.value, true).split("-");
-  //       filterProps = {
-  //         har: Number(datepart[0]),
-  //         bln: Number(datepart[1]),
-  //         thn: Number(datepart[2]),
-  //       };
-  //     } else {
-  //       //ranged date
-  //       const datepart = formatRangeDate(_dateFilter.valueMin, _dateFilter.valueMax, true).split("/");
-  //       if (datepart[1]) {
-  //         filterProps = {
-  //           datepast: datepart[0],
-  //           datenow: datepart[1],
-  //         };
-  //       } else {
-  //         filterProps = {
-  //           datepast: datepart[0] + " 00:00:00",
-  //           datenow: datepart[0] + " 23:59:59",
-  //         };
-  //       }
-  //     }
-  //   }
-  //   if (keyword && keyword.length > 1) {
-  //     const orderSearch = setTimeout(async () => {
-  //       setPage(1);
-  //       setLoading(true);
-  //       const { data, error } = await getTransaction({
-  //         lok_id: cookies.lok_id,
-  //         q: keyword,
-  //         page: 1,
-  //         rows: rowsPerPage,
-  //         loaditems: "yes",
-  //         ...filterProps,
-  //       });
-  //       handleResponse({ data, error });
-  //       setLoading(false);
-  //     }, TIME_SEARCH_DEBOUNCE);
-  //     return () => {
-  //       clearTimeout(orderSearch);
-  //     };
-  //   } else if (!keyword) {
-  //     const init = async () => {
-  //       setTransactions([]);
-  //       setLoading(true);
-  //       setPage(1);
-  //       const { data, error } = await getTransaction({
-  //         lok_id: cookies.lok_id,
-  //         page: 1,
-  //         rows: rowsPerPage,
-  //         loaditems: "yes",
-  //         ...filterProps,
-  //       });
-  //       handleResponse({ data, error });
-  //       setLoading(false);
-  //     };
-  //     init();
-  //   }
-  // }, [keyword, filters, refreshflag]);
+  useEffect(() => {
+    const _dateFilter = filters.find((f) => f.key === "date");
+    
+    let filterProps1 = {};
+    let filterProps2 = {};
+    let filterProps3 = {};
+    
+    let filterProps = {};
+    if (_dateFilter) {
+      if (_dateFilter.value) {
+        //single date
+        const datepart = formatDate(_dateFilter.value, true).split("-");
+        filterProps = {
+          har: Number(datepart[0]),
+          bln: Number(datepart[1]),
+          thn: Number(datepart[2]),
+        };
+      } else {
+        //ranged date
+        const datepart = formatRangeDate(_dateFilter.valueMin, _dateFilter.valueMax, true).split("/");
+        if (datepart[1]) {
+          filterProps = {
+            datepast: datepart[0],
+            datenow: datepart[1],
+          };
+        } else {
+          filterProps = {
+            datepast: datepart[0] + " 00:00:00",
+            datenow: datepart[0] + " 23:59:59",
+          };
+        }
+      }
+    }
+    let _newfilter = filters.filter(function (object) {
+      return object.key === "category";
+    });
+    _newfilter.forEach((_item, index) => {
+      console.log(_item)
+      if(_item.value=="Cicilan lunas")
+        filterProps.cicilanlunas = "cicilanlunas";
+      if(_item.value=="Cicilan belum lunas")
+        filterProps.cicilanbelumlunas = "cicilanbelumlunas";
+      if(_item.value=="Tidak pernah mencicil"){
+
+        filterProps.tidakpernahmencicil = "tidakpernahmencicil";
+      }
+    });
+    
+    if (keyword && keyword.length > 1) {
+      const orderSearch = setTimeout(async () => {
+        setTransactions([]);
+        setPage(1);
+        setLoading(true);
+        const { data, error } = await getTransaction({
+          lok_id: cookies.lok_id,
+          q: keyword,
+          page: 1,
+          rows: rowsPerPage,
+          loaditems: "yes",
+          ...filterProps,
+        });
+        handleResponse({ data, error });
+        setLoading(false);
+      }, TIME_SEARCH_DEBOUNCE);
+      return () => {
+        clearTimeout(orderSearch);
+      };
+    } else if (!keyword) {
+      const init = async () => {
+        setTransactions([]);
+        setLoading(true);
+        setPage(1);
+        const { data, error } = await getTransaction({
+          lok_id: cookies.lok_id,
+          page: 1,
+          rows: rowsPerPage,
+          loaditems: "yes",
+          ...filterProps,
+        });
+        handleResponse({ data, error });
+        setLoading(false);
+      };
+      init();
+    }
+  }, [keyword, filters, refreshflag]);
 
   const initData = useCallback(() => {
     const _dateFilter = filters.find((f) => f.key === "date");
@@ -140,6 +163,17 @@ export default function Transaction() {
         }
       }
     }
+    let _newfilter = filters.filter(function (object) {
+      return object.key === "category";
+    });
+    _newfilter.forEach((_item, index) => {
+      if(_item.value=="Cicilan lunas")
+        filterProps.cicilanlunas = "cicilanlunas";
+      if(_item.value=="Cicilan belum lunas")
+        filterProps.cicilanbelumlunas = "cicilanbelumlunas";
+      if(_item.value=="Tidak pernah mencicil")
+        filterProps.tidakpernahmencicil = "tidakpernahmencicil";
+    });
     if (keyword && keyword.length > 0) {
       const orderSearch = setTimeout(async () => {
         // setPage(1);
@@ -163,32 +197,32 @@ export default function Transaction() {
       const init = async () => {
         setLoading(true);
         if (page <= 1){
-          if (localStorage.getItem("transaksi_1")) {
-            const _transactions=JSON.parse(localStorage.getItem("transaksi_1")).value;
-            setTransactions(_transactions);
-            let titem = 0;
-            let ttotal = 0;
-            _transactions?.map((i, index) => {
-              i.notaitems.map((ii, indexi) => {
-                if (cookies.lok_type != "laundry") {
-                  titem = titem + parseFloat(ii.qty);
-                  ttotal = ttotal + parseFloat(ii.total);
-                }
-                if (cookies.lok_type == "laundry") {
-                  ii.service_level_satuan0 = ii.service_level_satuan0?JSON.parse(ii.nit_service_level_satuan0):[];
-                  ii.service_level_satuan0.map((iii, indexii) => {
-                    titem = titem + parseFloat(iii.service_qty);
-                    ttotal = ttotal + parseFloat(iii.service_total);
-                  });
-                }
-              });
-            });
+          // if (localStorage.getItem("transaksi_1")) {
+          //   const _transactions=JSON.parse(localStorage.getItem("transaksi_1")).value;
+          //   setTransactions(_transactions);
+          //   let titem = 0;
+          //   let ttotal = 0;
+          //   _transactions?.map((i, index) => {
+          //     i.notaitems.map((ii, indexi) => {
+          //       if (cookies.lok_type != "laundry") {
+          //         titem = titem + parseFloat(ii.qty);
+          //         ttotal = ttotal + parseFloat(ii.total);
+          //       }
+          //       if (cookies.lok_type == "laundry") {
+          //         ii.service_level_satuan0 = ii.service_level_satuan0?JSON.parse(ii.nit_service_level_satuan0):[];
+          //         ii.service_level_satuan0.map((iii, indexii) => {
+          //           titem = titem + parseFloat(iii.service_qty);
+          //           ttotal = ttotal + parseFloat(iii.service_total);
+          //         });
+          //       }
+          //     });
+          //   });
             
-            setTotalnota(_transactions.length);
-            setTotalitem(titem);
-            setTotalnominal(ttotal);
-          }
-          else{
+          //   setTotalnota(_transactions.length);
+          //   setTotalitem(titem);
+          //   setTotalnominal(ttotal);
+          // }
+          //else{
             const { data, error } = await getTransaction({
               lok_id: cookies.lok_id,
               page: 1,
@@ -196,18 +230,18 @@ export default function Transaction() {
               loaditems: "yes",
               ...filterProps,
             });
-            if(error)
-              alert('Transaksi ke-1 keatas belum sempat tersimpan di lokal')
-            else
+            if(!error)
+              //alert('Transaksi ke-1 keatas belum sempat tersimpan di lokal')
+            //else
             handleResponse({ data, error });
-          }
+          //}
         }
         else{
-          if (localStorage.getItem("transaksi_"+page)) {
-            const _transactions=JSON.parse(localStorage.getItem("transaksi_"+page)).value;
-            setTransactions([...transactions, ..._transactions]);
-          }
-          else{
+          // if (localStorage.getItem("transaksi_"+page)) {
+          //   const _transactions=JSON.parse(localStorage.getItem("transaksi_"+page)).value;
+          //   setTransactions([...transactions, ..._transactions]);
+          // }
+          // else{
             const { data, error } = await getTransaction({
               lok_id: cookies.lok_id,
               page: page,
@@ -215,11 +249,11 @@ export default function Transaction() {
               loaditems: "yes",
               ...filterProps,
             });
-            if(error)
-              alert('Transaksi ke-'+(page*20)+' keatas belum sempat tersimpan di lokal')
-            else
+            if(!error)
+              //alert('Transaksi ke-'+(page*20)+' keatas belum sempat tersimpan di lokal')
+            //else
             handleAppendResponse({ data, error });
-          }
+          // }
         }
         setLoading(false);
       };
@@ -234,14 +268,21 @@ export default function Transaction() {
 
   useEffect(() => {
     if (page > 1) initData();
+    else{
+      const _filters = cloneDeep(filters);
+      let __filter = _filters.filter(function (object) {
+        return object.key === "date";
+      });
+      setFilters(__filter)
+    }
   }, [page]);
   
   const handleResponse = ({ data, error }) => {
-    console.log('aaaaaaaa')
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
-      setTransactions(data);
+      setPage(1)
+      
       let titem = 0;
       let ttotal = 0;
       data.map((i, index) => {
@@ -259,39 +300,41 @@ export default function Transaction() {
           }
         });
       });
-      
+      console.log(data)
+      console.log(cookies.lok_type)
+      setTransactions(data);
       setTotalnota(data.length);
       setTotalitem(titem);
       setTotalnominal(ttotal);
-      localStorage.setItem(
-        "transaksi_1",
-        JSON.stringify({
-          key: "transaksi",
-          value: data,
-        })
-      );
+      // localStorage.setItem(
+      //   "transaksi_1",
+      //   JSON.stringify({
+      //     key: "transaksi",
+      //     value: data,
+      //   })
+      // );
     }
   };
 
   const handleAppendResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       const _transactions = data;
       setTransactions([...transactions, ..._transactions]);
-      localStorage.setItem(
-        "transaksi_"+page,
-        JSON.stringify({
-          key: "transaksi",
-          value: data,
-        })
-      );
+      // localStorage.setItem(
+      //   "transaksi_"+page,
+      //   JSON.stringify({
+      //     key: "transaksi",
+      //     value: data,
+      //   })
+      // );
     }
   };
-
+  
   // const handleResponse = ({ data, error }) => {
   //   if (error) {
-  //     alert("Terjadi Kesalahan");
+  //     alert(dictionary.universal.erroroccured[lang]);
   //   } else {
   //     let tnota = 0;
   //     let titem = 0;
@@ -320,7 +363,7 @@ export default function Transaction() {
 
   // const handleAppendResponse = ({ data, error }) => {
   //   if (error) {
-  //     alert("Terjadi Kesalahan");
+  //     alert(dictionary.universal.erroroccured[lang]);
   //   } else {
   //     const _transactions = data;
   //     setTransactions([...transactions, ..._transactions]);
@@ -384,14 +427,15 @@ export default function Transaction() {
     } else {
       setOpen(false);
       const _transactions = cloneDeep(transactions);
-      console.log(_transactions[transIndex]);
-      console.log(data);
       if (parseInt(data[0].cil_sisa) == 0) {
         _transactions[transIndex].piutlunas = 1;
         setTransactions(_transactions);
+        
+        
       }
+      setRefreshflag(!refreshflag);
     }
-  }, [transById, credits]);
+  }, [transById, credits,refreshflag]);
 
   const handleChange = (evt, id) => {
     setCredits({
@@ -410,7 +454,7 @@ export default function Transaction() {
         ? 0
         : parseFloat(parseFloat(newcredits.cil_tagihan) - parseFloat(cicil));
     setCredits(newcredits);
-  }, [bunga]);
+  }, [BuildingLibraryIcon]);
 
   useEffect(() => {
     const newcredits = cloneDeep(credits);
@@ -458,6 +502,10 @@ export default function Transaction() {
   
 
   function handleNewOpen(item) {
+    if(transCheckNmr.length>1){
+      let str=transCheckNmr.join(", ");
+      item.nomor=str;
+    }
     setTransById(item);
     cookies.role_delete.length == 0 && cookies.role_dst.length == 0
       ? setNewOpen(!newOpen)
@@ -481,7 +529,6 @@ export default function Transaction() {
     setNotaItemsCheckout(item);
     setTotalPay(0);
     setMoney(0);
-    console.log(item);
   }
 function handlePrintSplitBill(item) {
     localStorage.setItem("checkout-prev", "/transaction");
@@ -496,35 +543,63 @@ function handlePrintSplitBill(item) {
     setNotaItemsCheckout(item);
     setTotalPay(0);
     setMoney(0);
-    console.log(item);
   }
   const handleDelete = useCallback(async () => {
-    const { data, error } = await deleteTransaction({
-      not_id: transById.id,
-      log_reason: "",
-      kas_id: cookies.kas_id,
-    });
-    if (error) {
-      alert("Data tidak ditemukan");
-    } else {
-      setLoading(true);
-      setNewOpen(false);
-      setRefreshflag(!refreshflag);
-      setLoading(false);
+    if(transCheckId.length>1){
+      let tasks = [];
+      let k=0;
+      for (let i = 0; i < transCheckId.length; i++) {
+        const delay = 1500 * i;
+        tasks.push(new Promise(async function(resolve) {
+          await new Promise(res => setTimeout(res, delay));
+          let result = await new Promise(r => {
+            deleteTransaction({kas_id:cookies.kas_id, not_id:transCheckId[k]});
+            r(delay);
+          });
+          resolve(result);
+          k++
+        }));
+      }
+      Promise.all(tasks).then(results => {
+        setTransCheckId([])
+        setTransCheckNmr([])
+        setRefreshflag(!refreshflag);
+        setNewOpen(false);
+      });
     }
-  }, [transById]);
+    else{
+      const { data, error } = await deleteTransaction({
+        not_id: transById.id,
+        log_reason: "",
+        kas_id: cookies.kas_id,
+      });
+      if (error) {
+        alert(dictionary.universal.notfound[lang]);
+      } else {
+        setLoading(true);
+        setNewOpen(false);
+        setRefreshflag(!refreshflag);
+        setLoading(false);
+      }
+    }
+  }, [transById,transCheckId]);
 
   const handleCheckChange = useCallback(
     (item) => {
       const oldArray = [...transCheckId];
       const indexOfId = oldArray.indexOf(item.id);
+      const oldArrayNmr = [...transCheckNmr];
+      const indexOfIdNmr = oldArrayNmr.indexOf(item.nomor);
       if (indexOfId >= 0) {
         oldArray.splice(indexOfId, 1);
         setTransCheckId(oldArray);
+        oldArrayNmr.splice(indexOfNmr, 1);
+        setTransCheckNmr(oldArrayNmr);
       } else {
         setTransCheckId([...oldArray, item.id]);
+        setTransCheckNmr([...oldArrayNmr, item.nomor]);
       }
-    },[transCheckId]
+    },[transCheckId, transCheckNmr]
   );
 
   if (success) {
@@ -543,13 +618,23 @@ function handlePrintSplitBill(item) {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={handleFilter} value={keyword} label={"No. Transaksi"} />
+                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.transaction[lang]} />
               </div>
               <IconButton size="md" variant="text" onClick={openDrawerRight}>
-                <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Filter
+                  </div>
+                </div>
               </IconButton>
             </div>
 
@@ -574,15 +659,15 @@ function handlePrintSplitBill(item) {
                 <>
                   <div className="head-content flex gap-3 items-center mb-4 w-[97%] mx-auto">
                     <div className="nota flex gap-[2px] items-center">
-                      <DocumentIcon className="w-7 h-7" />
-                      <span className="font-semibold bg-[#d8bfd8] px-2 rounded-tr-lg rounded-br-lg">{totalnota}</span>
+                      <DocumentIcon className="w-6 h-6" />
+                      <span className="text-sm font-semibold bg-[#d8bfd8] px-2 rounded-tr-lg rounded-br-lg">{totalnota}</span>
                     </div>
                     <div className="item flex gap-[2px] items-center">
-                      <CubeIcon className="w-7 h-7" />
-                      <span className="font-semibold bg-[#b0e0e6] px-2 rounded-tr-lg rounded-br-lg">{totalitem}</span>
+                      <CubeIcon className="w-6 h-6" />
+                      <span className="text-sm font-semibold bg-[#b0e0e6] px-2 rounded-tr-lg rounded-br-lg">{totalitem}</span>
                     </div>
                     <div className="nominal flex gap-1 items-center">
-                      <span className="font-semibold bg-[#ffd700] px-2 rounded-lg">
+                      <span className="text-sm font-semibold bg-[#ffd700] px-2 rounded-lg">
                         Rp {formatThousandSeparator(totalnominal)}
                       </span>
                     </div>
@@ -605,13 +690,13 @@ function handlePrintSplitBill(item) {
         </div>
 
         <Dialog open={open} handler={handleOpen} size="xxl">
-          <DialogHeader className="border-b-2">Transaksi</DialogHeader>
+          <DialogHeader className="border-b-2">{dictionary.transaction.sidebar[lang]}</DialogHeader>
           <DialogBody className="overflow-auto pb-10">
             <div className="mb-4">
               <InputMoney
                 currency={currency}
                 disabled={true}
-                label="Tagihan"
+                label={dictionary.dialog.transaction.bill[lang]}
                 onChange={(evt) => handleChange(evt, "cil_tagihan")}
                 value={credits.cil_tagihan}
               />
@@ -620,8 +705,8 @@ function handlePrintSplitBill(item) {
               <InputMoney
                 currency={currency}
                 disabled={true}
-                label="Sisa"
-                //onChange={(evt)=>handleChange(evt, "cil_sisa")}
+                label={dictionary.dialog.transaction.remainingcost[lang]}
+                onChange={(evt)=>handleChange(evt, "cil_sisa")}
                 value={parseFloat(credits.cil_sisa)}
               />
             </div>
@@ -629,7 +714,7 @@ function handlePrintSplitBill(item) {
               <InputMoney
                 currency={currency}
                 //disabled={readonly}
-                label="Cicilan"
+                label={dictionary.dialog.transaction.installment[lang]}
                 onChange={(evt) => handleChange(evt, "cil_cicilan")}
                 value={credits.cil_cicilan}
               />
@@ -637,7 +722,7 @@ function handlePrintSplitBill(item) {
             <div className="mb-4">
               <InputMoney
                 //disabled={readonly}
-                label="Bunga"
+                label={dictionary.dialog.transaction.interest[lang]}
                 onChange={(evt) => handleChange(evt, "cil_bunga")}
                 value={credits.cil_bunga}
                 icon="%"
@@ -647,10 +732,10 @@ function handlePrintSplitBill(item) {
           </DialogBody>
           <DialogFooter className="border-t-2">
             <Button variant="gradient" color="red" onClick={() => setOpen(false)} className="mr-1">
-              <span>Back</span>
+              <span>{dictionary.universal.back[lang]}</span>
             </Button>
             <Button className="block" variant="gradient" color="green" onClick={saveData}>
-              <span>Confirm</span>
+              <span>{dictionary.universal.confirm[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -658,16 +743,16 @@ function handlePrintSplitBill(item) {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Transaksi <span className="font-semibold">{transById.nomor}</span> akan dihapus. Apakah anda yakin?
+              {dictionary.transaction.sidebar[lang]} {dictionary.universal.withnumber[lang]}<span className="font-semibold">{transById.nomor}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

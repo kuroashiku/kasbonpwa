@@ -4,7 +4,7 @@ import { Button, Dialog, DialogBody, DialogFooter } from "@material-tailwind/rea
 import { capitalizeWords, formatThousandSeparator } from "../../util/formatter";
 import { INVOICE_FILE_NAME } from "../../constant/appCommon";
 import { AppContext } from "../../AppContext";
-
+import { dictionary } from "../../constant/appDictionary";
 function PDFDoc({ data = InvoicePOS(), onPrint = () => {} }) {
   const { cookies } = useContext(AppContext);
 
@@ -210,7 +210,7 @@ export default function POSInvoicePdf({
       </DialogBody>
       <DialogFooter>
         <Button variant="outlined" color="teal" onClick={onClose} className="mr-1">
-          <span>Back</span>
+          <span>{dictionary.universal.back[lang]}</span>
         </Button>
         <Button color="teal" onClick={onSave}>
           <span>Download</span>

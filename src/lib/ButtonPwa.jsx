@@ -1,60 +1,68 @@
 import React, { useEffect, useState } from "react";
-import { Button, Dialog, DialogBody, DialogHeader, DialogFooter, IconButton, List, ListItem, Navbar,
-  Typography, Input, Spinner,} from "@material-tailwind/react";
+import { Button, Dialog, DialogBody, DialogHeader } from "@material-tailwind/react";
 
 const InstallPWA = () => {
   const [supportsPWA, setSupportsPWA] = useState(false);
   const [promptInstall, setPromptInstall] = useState(null);
   const [open, setOpen] = useState(true);
+  const [isSafari, setIsSafari] = useState(false);
+
   useEffect(() => {
-    const handler = e => {
+    // Deteksi Safari di iOS
+    const isIOS = /iPhone|iPad|iPod/i.test(navigator.userAgent);
+    const isSafariBrowser = /Safari/i.test(navigator.userAgent) && !/Chrome/i.test(navigator.userAgent);
+    setIsSafari(isIOS && isSafariBrowser);
+
+    // Event untuk Chrome dan browser berbasis Chromium lainnya
+    const handler = (e) => {
       e.preventDefault();
       setSupportsPWA(true);
       setPromptInstall(e);
     };
+
     window.addEventListener("beforeinstallprompt", handler);
 
-    return () => window.removeEventListener("transitionend", handler);
+    return () => {
+      window.removeEventListener("beforeinstallprompt", handler);
+    };
   }, []);
 
-  const onClick = evt => {
+  const onClick = (evt) => {
     evt.preventDefault();
-    if (!promptInstall) {
-      return;
+    if (promptInstall) {
+      promptInstall.prompt();
     }
-    promptInstall.prompt();
   };
-  if (!supportsPWA) {
+
+  if (!supportsPWA && !isSafari) {
     return null;
   }
+
   return (
-    // <button
-    //   className="link-button fixed top-24 left-4 p-4 bg-gray-500"
-    //   id="setup_button"
-    //   aria-label="Install app"
-    //   title="Install app"
-    //   onClick={onClick}
-    // >
-    //   Install
-    // </button>
-    <Dialog
-        open={open}
-        handler={() => setOpen(false)}
-        size="sm"
-      >
-        <DialogHeader>Install PWA</DialogHeader>
-        <DialogBody>
-          
-          <div className="mb-3">Terdeteksi device yang support PWA</div>
-          
-          <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={onClick}>
-            Install PWA
-          </Button>
-          <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={() => setOpen(false)}>
-            Lanjutkan ke aplikasi
-          </Button>
-        </DialogBody>
-      </Dialog>
+    <Dialog open={open} handler={() => setOpen(false)} size="sm">
+      <DialogHeader>Install PWA</DialogHeader>
+      <DialogBody>
+        {supportsPWA && (
+          <>
+            <div className="mb-3">Install App - Icon</div>
+            <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={onClick}>
+              Install As App/Icon
+            </Button>
+          </>
+        )}
+        {isSafari && (
+          <>
+            <div className="mb-3">
+              Untuk menambahkan aplikasi ini ke layar utama Anda, tekan ikon Share (kotak dengan panah) di bawah, lalu
+              pilih "Add to Home Screen".
+            </div>
+          </>
+        )}
+        <Button className="mb-2" fullWidth variant="gradient" color="teal" onClick={() => setOpen(false)}>
+          No Install, login Web
+        </Button>
+      </DialogBody>
+    </Dialog>
   );
 };
 

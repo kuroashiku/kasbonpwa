@@ -2,18 +2,22 @@ import { Fragment, useCallback, useContext, useEffect, useRef, useState } from "
 import { saveGeneralSetting } from "../../api/GeneralSetting";
 import { AppContext } from "../../AppContext";
 import { Button, Dialog, DialogHeader, DialogBody, DialogFooter, IconButton, Input, List, 
-	ListItem, Navbar, Option, Select, Tooltip, Typography} from "@material-tailwind/react";
+	ListItem, Navbar, Option, Select as SelectTailwind, Tooltip, Typography} from "@material-tailwind/react";
 import { Bars3Icon } from "@heroicons/react/24/outline";
 import LoadingOverlay from "../../lib/LoadingOverlay";
 import { clone, cloneDeep } from "lodash";
-import { getItems } from "../../api/Item";
+import { getItems, getItemsnew } from "../../api/Item";
 import { getTransaction } from "../../api/Transaction";
 import { bayarPos } from "../../api/Pos";
+import { dictionary } from "../../constant/appDictionary";
 import { convertItemListToCheckout } from "../../model/item";
 import { formatBackToNumber, formatThousandSeparator } from "../../util/formatter";
+import Select  from 'react-select';
+import CreatableSelect from 'react-select/creatable';
+import makeAnimated from 'react-select/animated';
 
 export default function GeneralSettingList() {
-	const { setMenuOpen, currency, cookies, setCookies } = useContext(AppContext);
+	const { setMenuOpen, currency, cookies, setCookies, lang, setLanguage } = useContext(AppContext);
 	const [listPadding, setListPadding] = useState("20px");
 	const [loading, setLoading] = useState(false);
 	const [generalSettings, setGeneralSettings] = useState([]);
@@ -54,8 +58,22 @@ export default function GeneralSettingList() {
 			gen_value: cookies.always_print == true ? "true" : cookies.always_print == false ? "false" : cookies.always_print,
 			gen_prop: "gen_set_always_print"
 		},
+		{
+			gen_id: 11,
+			gen_nama: "Stok inside Master Item",
+			gen_value: cookies.stokitem == true ? "true" : cookies.stokitem == false ? "false" : cookies.stokitem,
+			gen_prop: "gen_set_stokitem"
+		},
+		{
+			gen_id: 12,
+			gen_nama: "Bahasa",
+			gen_value: lang,
+			gen_prop: "gen_set_language"
+		},
 	]);
-
+	const animatedComponents = makeAnimated();
+	const [incData, setIncData] = useState([]);
+	const [oncData, setOncData] = useState([]);
 	const navbarRef = useRef();
 	const [open, setOpen] = useState(false);
 	const [openNotif, setOpenNotif] = useState(false);
@@ -69,7 +87,10 @@ export default function GeneralSettingList() {
 	const [generalSelect, setGeneralSelect] = useState("");
 	const [generalInput, setGeneralInput] = useState(0);
 	const [countnota, setCountnota] = useState(0);
-
+	const [openIncomeOutcome, setOpenIncomeOutcome] = useState(false);
+	const [valueIncome, setValueIncome] = useState({label:"Masukkan Income Baru",value:""});
+	const [valueOutcome, setValueOutcome] = useState({label:"Masukkan Outcome Baru",value:""});
+	const [langopt, setLangopt] = useState(["ID", "EN"]);
 	function handleOpen(item, set, index) {
 		setOpen(!open);
 		setGeneralSettingsTemp(generalSettings);
@@ -81,7 +102,23 @@ export default function GeneralSettingList() {
 		if (item.gen_id > 3) setMode(2);
 		else setMode(1);
 	}
-
+	function handleIncomeOutcome() {
+		let _incomeoutcome=cloneDeep(cookies.income_outcome);
+		let str=JSON.stringify(_incomeoutcome);
+		let _str=str.replaceAll('ion_nama', 'label').replaceAll('ion_id', 'value');
+		let arrstr=JSON.parse(_str)
+		console.log(arrstr)
+		let _income = arrstr.filter(function (object) {
+			return object.ion_type === "income";
+		});
+		let _outcome = arrstr.filter(function (object) {
+			return object.ion_type === "outcome";
+		});
+		setIncData(_income);
+		setOncData(_outcome);
+		setOpenIncomeOutcome(true);
+		
+	}
 	const cancelData = useCallback(async () => {
 		setOpen(false);
 		setGeneralSettings(generalSettingContains);
@@ -92,6 +129,9 @@ export default function GeneralSettingList() {
 	}
 
 	const saveData = useCallback(async () => {
+		console.log(generalById)
+		console.log(generalSettings)
+		console.log(generalInput)
 		const _newGeneralSettings = cloneDeep(generalSettings);
 		_newGeneralSettings[genIndex].gen_value = generalInput;
 		let _newerGeneralSettings = "";
@@ -104,6 +144,11 @@ export default function GeneralSettingList() {
 			{alert("Fitur split bill belum tersedia untuk laundry"); setOpen(false);approve=false;}
 		if(_newGeneralSettings[7].gen_value=="true"&&_newGeneralSettings[8].gen_value=="true")
 			{alert("Fitur split bill tidak boleh aktif bersama join bill"); setOpen(false);approve=false;}
+		if(generalById.gen_id==12){
+			setLanguage(generalInput);
+			setGeneralSettings(_newGeneralSettings);
+			setOpen(false);approve=false;
+		}
 		// if (changeforce) {
 		// 	const init = async () => {
 		// 		const { data, error } = await saveGeneralSetting({ 
@@ -112,7 +157,7 @@ export default function GeneralSettingList() {
 		// 			gen_prop:genIndex==3?_newGeneralSettings[7].gen_prop:_newGeneralSettings[3].gen_prop,
 		// 			gen_value:genIndex==3?"false":"resto" });
 		// 		if (error) {
-		// 			alert("Data tidak ditemukan");
+		// 			alert(dictionary.universal.notfound[lang]);
 		// 		} else {
 		// 			let splitgeneral=data.split('-');
 		// 			setCookies(splitgeneral[0].replace("gen_set_", ""), splitgeneral[1]);
@@ -130,7 +175,7 @@ export default function GeneralSettingList() {
 				gen_value:generalInput
 			});
 			if (error) {
-				alert("Data tidak ditemukan");
+				alert(dictionary.universal.notfound[lang]);
 			} else {
 				setLoading(true);
 				let splitgeneral=data.split('-');
@@ -150,7 +195,7 @@ export default function GeneralSettingList() {
 			sellable: "true",
         });
 		if (error) {
-			alert("Data tidak ditemukan");
+			alert(dictionary.universal.notfound[lang]);
 		} else {
 			let arrTotalItem=[];
 			let arrItem=[];
@@ -183,7 +228,7 @@ export default function GeneralSettingList() {
 					loaditems: "yes",
 				});
 				if (error) {
-					alert("Data tidak ditemukan");
+					alert(dictionary.universal.notfound[lang]);
 				} else {
 					
 					let arrTotalNota=[];
@@ -222,18 +267,24 @@ export default function GeneralSettingList() {
 
 	const handleOnline = useCallback(async () => {
 		
+		
+
 		if(!localStorage.getItem("pos_save"))
 			alert('Tidak ada data nota yang bisa diupload')
 		else{
 			setOpenNotif(true);
 			setCountnota(JSON.parse(JSON.parse(localStorage.getItem("pos_save")).value).length);
 		}
+
+
+
+
 		// const { data, error } = await getItems({
 		// 	lok_id: cookies.lok_id,
 		// 	sellable: "true",
         // });
 		// if (error) {
-		// 	alert("Data tidak ditemukan");
+		// 	alert(dictionary.universal.notfound[lang]);
 		// } else {
 			// for(let i=0;i<Math.ceil(convertItemListToCheckout(data).length/20);  i++){
 			// 	localStorage.removeItem("pos_item_"+(i+1));
@@ -250,7 +301,7 @@ export default function GeneralSettingList() {
 		// 	sellable: "true",
         // });
 		// if (error) {
-		// 	alert("Data tidak ditemukan");
+		// 	alert(dictionary.universal.notfound[lang]);
 		// } else {
 		// 	console.log(data.length)
 		// 	// localStorage.setItem(
@@ -274,7 +325,7 @@ export default function GeneralSettingList() {
 		// 	const initbayar = async () => {
 		// 		const { data, error } = await bayarPos(i);
 		// 		if (error) {
-		// 			alert("Data tidak ditemukan");
+		// 			alert(dictionary.universal.notfound[lang]);
 		// 		} else {
 		// 			let splitgeneral=data.split('-');
 		// 			setCookies(splitgeneral[0].replace("gen_set_", ""), splitgeneral[1]);
@@ -289,7 +340,7 @@ export default function GeneralSettingList() {
 		// 	sellable: "true",
         // });
 		// if (error) {
-		// 	alert("Data tidak ditemukan");
+		// 	alert(dictionary.universal.notfound[lang]);
 		// } else {
 			// for(let i=0;i<Math.ceil(convertItemListToCheckout(data).length/20);  i++){
 			// 	localStorage.removeItem("pos_item_"+(i+1));
@@ -326,7 +377,7 @@ export default function GeneralSettingList() {
 		// 	sellable: "true",
         // });
 		// if (error) {
-		// 	alert("Data tidak ditemukan");
+		// 	alert(dictionary.universal.notfound[lang]);
 		// } else {
 		// 	console.log(data.length)
 		// 	// localStorage.setItem(
@@ -345,6 +396,44 @@ export default function GeneralSettingList() {
 		// 	setLoading(false);
 		// }
 	}, [generalById, generalSettings, generalInput]);
+	const handleIncomeOutcomeSave = useCallback(async () => {
+		let dataion=[];
+		oncData?.map((i, index) => {
+			i.ion_id=index+1;
+			i.ion_nama=i.label;
+			i.ion_status=true;
+			dataion.push(i);
+		})
+		incData?.map((i, index) => {
+			i.ion_id=oncData.length+index+1;
+			i.ion_nama=i.label;
+			i.ion_status=true;
+			dataion.push(i);
+		})
+		dataion?.map((i, index) => {
+			delete i.label;
+			delete i.value;
+		})
+		const { data, error } = await saveGeneralSetting({
+			lok_id: cookies.lok_id,
+			gen_id: cookies.gen_id,
+			gen_prop:"gen_json_income_outcome",
+			gen_value:JSON.stringify(dataion)
+		});
+		if (error) {
+			alert(dictionary.universal.notfound[lang]);
+		} else {
+			setLoading(true);
+			let splitgeneral=data.split('-');
+			setCookies("income_outcome", splitgeneral[1]);
+			setOpenIncomeOutcome(false);
+			// _newGeneralSettings[genIndex].gen_value = splitgeneral[1];
+			// setGeneralSettingContains(_newGeneralSettings);
+			// setOpen(false);
+			setLoading(false);
+		}
+		
+	}, [oncData,incData]);
 	useEffect(() => {
 		if (keyword && keyword.length > 1) {
 			const newFilters = cloneDeep(generalSettingContains);
@@ -356,7 +445,22 @@ export default function GeneralSettingList() {
 			setGeneralSettings(generalSettingContains);
 		}
 	}, [keyword, cookies]);
-
+	useEffect(() => {
+		if(valueOutcome&&valueOutcome.value!=""){
+			let newinc=[...oncData];
+			newinc.push({value:-1,label:valueOutcome.label,ion_type:'outcome'});
+			setOncData(newinc);
+			setValueOutcome({value:"",label:"Masukkan Outcome Baru"});
+		}
+	}, [valueOutcome]);
+	useEffect(() => {
+		if(valueIncome&&valueIncome.value!=""){
+			let newinc=[...incData];
+			newinc.push({value:-1,label:valueIncome.label,ion_type:'income'});
+			setIncData(newinc);
+			setValueIncome({value:"",label:"Masukkan Income Baru"});
+		}
+	}, [valueIncome]);
 	useEffect(() => {
 		if (navbarRef.current) {
 			setListPadding(`${navbarRef.current.offsetHeight + 20}px`);
@@ -364,11 +468,13 @@ export default function GeneralSettingList() {
 	}, [generalSettings, navbarRef]);
 
 	const CustomSelectOption = (option) => {
+		console.log(generalById)
 		if (generalById.gen_nama === "Mode Scan") return option === "true" ? "Pakai Scanner" : "Tidak Pakai Scanner";
 		else if (generalById.gen_nama === "Tipe Bisnis") return option === "resto" ? "Resto" : (option === "retail" ? "Retail":"Laundry");
 		else if (generalById.gen_nama === "Tipe Resto")
 			return parseInt(option) === 1 ? "Resto Bayar Langsung" : "Resto Bayar Setelah Makan";
-		else if (generalById.gen_nama === "Piutang"||generalById.gen_nama === "Split Bill"||generalById.gen_nama === "Join Bill"||generalById.gen_nama === "Always Print") return option === "true" ? "Aktif" : "Tidak Aktif";
+		else if (generalById.gen_nama === "Piutang"||generalById.gen_nama === "Split Bill"||generalById.gen_nama === "Join Bill"||generalById.gen_nama === "Always Print"||generalById.gen_nama === "Stok inside Master Item") return option === "true" ? "Aktif" : "Tidak Aktif";
+		else if (generalById.gen_nama === "Bahasa")return option === "ID" ? "Bahasa Indonesia" : "English";
 		else return option;
 	};
 
@@ -376,9 +482,10 @@ export default function GeneralSettingList() {
 		if (nama === "Mode Scan") return value === "true" ? "Pakai Scanner" : "Tidak Pakai Scanner";
 		else if (nama === "Tipe Bisnis") return value === "resto" ? "Resto" : (value === "retail" ? "Retail":"Laundry");
 		else if (nama === "Tipe Resto") return parseInt(value) === 1 ? "Resto Bayar Langsung" : "Resto Bayar Setelah Makan";
-		else if (nama === "Piutang"||nama === "Split Bill"||nama === "Join Bill"||nama === "Always Print") return value === "true" ? "Aktif" : "Tidak Aktif";
+		else if (nama === "Piutang"||nama === "Split Bill"||nama === "Join Bill"||nama === "Always Print"||nama === "Stok inside Master Item") return value === "true" ? "Aktif" : "Tidak Aktif";
 		else if (nama === "Auto Logout") return value + " Jam";
 		else if (nama === "Maximum Piutang") return value==0?(currency+" 0"):(currency + " " + formatThousandSeparator(value));
+		else if (nama === "Bahasa")return value === "ID" ? "Bahasa Indonesia" : "English";
 		else return value;
 	};
 
@@ -409,7 +516,12 @@ export default function GeneralSettingList() {
 					<Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
 						<div className="flex gap-3 items-center">
 							<IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
+								<div className="justify-items-center lowercase">
 								<Bars3Icon className="h-6 w-6 stroke-2" />
+								<div style={{fontSize:"10px",padding:"0px"}}>
+									Menu
+								</div>
+								</div>
 							</IconButton>
 							<div className="text-base font-semibold text-[#606060]">Pengaturan</div>
 						</div>
@@ -438,22 +550,15 @@ export default function GeneralSettingList() {
 						{
 							<ListItem key="5a" className="">
 							<div className="w-full pr-2">
-								<div></div>
+								
 								<div className="flex items-center justify-between">
-									<Typography variant="small" color="gray" className="font-normal">
-									<Tooltip content="Mengupload data nota yang tersimpan di lokal" placement="right" className="border border-teal-500 bg-white text-teal-500">
-										<Button variant="gradient" color="green" onClick={handleOnline} className="w-full flex-1">
-											<span>Online Mode</span>
+									<Typography variant="small" color="gray" className="font-normal p-2">
+									<Tooltip content="Mengeset Biaya Tambahan" placement="right" className="border border-teal-500 bg-white text-teal-500">
+										<Button variant="gradient" color="green" onClick={handleIncomeOutcome} className="w-full flex-1">
+											<span>Set Income Outcome</span>
 										</Button>
 									</Tooltip>
 						
-									</Typography>
-									<Typography color="gray" className="font-normal">
-									<Tooltip content="Mengupload pos item dan transaksi ke lokal" placement="left" className="border border-teal-500 bg-white text-teal-500">
-										<Button variant="gradient" color="blue-gray" onClick={handleOffline} className="w-full flex-1">
-											<span>Offline Mode</span>
-										</Button>
-									</Tooltip>
 									</Typography>
 								</div>
 							</div>
@@ -463,7 +568,7 @@ export default function GeneralSettingList() {
 				</div>
 
 				<Dialog open={open} dismiss={{ outsidePress: cancelData }} handler={handleOpen}>
-					<DialogHeader>Ubah Nilai Pengaturan</DialogHeader>
+					<DialogHeader>{dictionary.dialogheader.changesettingvalue[lang]}</DialogHeader>
 
 					<DialogBody>
 						<div className="mb-4">
@@ -477,7 +582,7 @@ export default function GeneralSettingList() {
 									}}
 								/>
 							) : (
-								<Select
+								<SelectTailwind
 									id="select_general"
 									value={`${generalInput}`}
 									onChange={setGeneralInput}
@@ -496,12 +601,18 @@ export default function GeneralSettingList() {
 													{CustomSelectOption(p)}
 												</Option>
 											))
+										: generalById.gen_id == 12
+										? langopt.map((p) => (
+												<Option value={p} key={p}>
+													{CustomSelectOption(p)}
+												</Option>
+											))
 										: truefalse.map((p) => (
 												<Option value={p} key={p}>
 													{CustomSelectOption(p)}
 												</Option>
 											))}
-								</Select>
+								</SelectTailwind>
 							)}
 							{/* <input className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" value={generalById.gen_value} onChange={handleChange} id="gen_value" name="gen_value" type="number" placeholder="Value" />  */}
 						</div>
@@ -509,16 +620,16 @@ export default function GeneralSettingList() {
 
 					<DialogFooter className="flex gap-3 justify-between">
 						<Button variant="gradient" color="blue-gray" onClick={cancelData} className="w-full flex-1">
-							<span>Batal</span>
+							<span>{dictionary.universal.cancel[lang]}</span>
 						</Button>
 						<Button variant="gradient" color="green" onClick={saveData} className="w-full flex-1">
-							<span>Ubah</span>
+							<span>{dictionary.universal.change[lang]}</span>
 						</Button>
 					</DialogFooter>
 				</Dialog>
 
 				<Dialog open={openNotif} handler={handleOpen}>
-					<DialogHeader>Ubah Nilai Pengaturan</DialogHeader>
+					<DialogHeader>{dictionary.dialogheader.changesettingvalue[lang]}</DialogHeader>
 
 					<DialogBody>
 						<div className="mb-4">
@@ -528,9 +639,46 @@ export default function GeneralSettingList() {
 
 					<DialogFooter className="flex gap-3 justify-between">
 						<Button variant="gradient" color="blue-gray" onClick={()=>{setOpenNotif(false)}} className="w-full flex-1">
-							<span>Batal</span>
+							<span>{dictionary.universal.cancel[lang]}</span>
 						</Button>
 						<Button variant="gradient" color="green" onClick={handleOnlineAccept} className="w-full flex-1">
+							<span>Setuju</span>
+						</Button>
+					</DialogFooter>
+				</Dialog>
+				<Dialog open={openIncomeOutcome} handler={()=>setOpenIncomeOutcome(false)}>
+					<DialogHeader>Income Outcome</DialogHeader>
+
+					<DialogBody>
+						<div className="flex justify-between">
+							<div className="w-1/2">
+								<CreatableSelect 
+									isClearable 
+									options={incData}
+									value={valueIncome}
+									onChange={setValueIncome} 
+									getOptionLabel={(inc) => inc.label}
+									getOptionValue={(inc) => inc.value}
+								/>
+							</div>
+							<div className="w-1/2">
+								<CreatableSelect 
+									isClearable 
+									options={oncData}
+									value={valueOutcome}
+									onChange={setValueOutcome} 
+									getOptionLabel={(ouc) => ouc.label}
+									getOptionValue={(ouc) => ouc.value}
+								/>
+							</div>
+						</div>
+					</DialogBody>
+
+					<DialogFooter className="flex gap-3 justify-between">
+						<Button variant="gradient" color="blue-gray" onClick={()=>{setOpenIncomeOutcome(false)}} className="w-full flex-1">
+							<span>{dictionary.universal.cancel[lang]}</span>
+						</Button>
+						<Button variant="gradient" color="green" onClick={handleIncomeOutcomeSave} className="w-full flex-1">
 							<span>Setuju</span>
 						</Button>
 					</DialogFooter>

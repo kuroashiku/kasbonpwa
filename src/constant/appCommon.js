@@ -1,4 +1,4 @@
-export const TIME_SEARCH_DEBOUNCE = 500;
+export const TIME_SEARCH_DEBOUNCE = 1500;
 export const DEFAULT_ROW_PER_PAGE = 20;
 
 export const IMAGEKIT_URL_ENDPOINT = import.meta.env.VITE_IMAGEKIT_URL_ENDPOINT;

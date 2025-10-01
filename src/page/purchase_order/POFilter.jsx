@@ -10,9 +10,9 @@ import { AdjustmentsVerticalIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useContext } from "react";
 import { AppContext } from "../../AppContext";
-
+import { dictionary } from "../../constant/appDictionary";
 export default function POFilter({ open = false, onClose = () => {}, onApply = () => {} }) {
-  const { filters } = useContext(AppContext);
+  const { filters,lang } = useContext(AppContext);
   const [showCalendar, setShowCalendar] = useState(false);
   const [isDateRange, setIsDateRange] = useState(false);
   const [filtersTemp, setFiltersTemp] = useState([]);
@@ -95,7 +95,7 @@ export default function POFilter({ open = false, onClose = () => {}, onApply = (
         <div className="col-span-3 w-10">
           <Input
             color="teal"
-            label="Pilih Tanggal"
+            label={dictionary.choose.date[lang]}
             onChange={() => {}}
             onClick={() => setShowCalendar(true)}
             value={
@@ -152,7 +152,7 @@ export default function POFilter({ open = false, onClose = () => {}, onApply = (
         onClick={() => onApply(filtersTemp)}
       >
         <AdjustmentsVerticalIcon className="w-5 h-5 mr-2" />
-        Terapkan Filter
+        {dictionary.universal.apply[lang]} Filter
       </Button>
     </Drawer>
   );

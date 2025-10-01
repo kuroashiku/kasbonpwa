@@ -9,10 +9,6 @@ export const getPo = (body=GetInventoryReqBody()) => {
     return httpPost(`${API_HOST}/po/read`, body);
 };
 
-export const getPoItem = (body=GetInventoryReqBody()) => {
-    return httpPost(`${API_HOST}/po/poitem`, body);
-};
-
 export const savePo = (body=GetInventoryReqBody()) => {
     return httpPost(`${API_HOST}/po/save`, body);
 };
@@ -33,18 +29,10 @@ export const getRcv = (body=GetInventoryReqBody()) => {
     return httpPost(`${API_HOST}/receive/read`, body);
 };
 
-export const getRcvPoItem = (body=GetInventoryReqBody()) => {
-    return httpPost(`${API_HOST}/receive/poitem`, body);
-};
-
 export const saveRcv = (body=GetInventoryReqBody()) => {
     return httpPost(`${API_HOST}/receive/save`, body);
 };
 
 export const payRcv = (body=GetInventoryReqBody()) => {
     return httpPost(`${API_HOST}/receive/pay`, body);
-};
-
-export const receiptRcv = (body=GetInventoryReqBody()) => {
-    return httpPost(`${API_HOST}/receive/receipt`, body);
 };

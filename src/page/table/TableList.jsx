@@ -27,6 +27,8 @@ import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
 import InputSimple from "../../lib/InputSimple";
 import { cloneDeep } from "lodash";
 import { CheckCircleIcon, PencilSquareIcon, XCircleIcon } from "@heroicons/react/16/solid";
+import { database } from '../../lib/FirebaseConfig';
+import { ref, onValue, push } from "firebase/database";
 
 export default function tableList() {
   const { setMenuOpen, filters, setFilters, lang, cookies } = useContext(AppContext);
@@ -49,7 +51,53 @@ export default function tableList() {
   const handleFilter = (searchKey) => {
     setKeyword(searchKey);
   };
+  useEffect(() => {
+    const usersRef = ref(database, "pos_table"); // reference to the "users" node
 
+    const unsubscribe = onValue(usersRef, (snapshot) => {
+      const data = snapshot.val();
+      if (data) {
+        const usersArray = Object.entries(data).map(([key, value]) => ({
+          id: key,
+          ...value,
+        }));
+        const handleResponse = ({ data, error }) => {
+          if (error) {
+            alert(dictionary.universal.notfound[lang]);
+          } else {
+            let stringdata = JSON.stringify(data).replaceAll('"Terisi"', "true").replaceAll('"Kosong"', "false");
+            setTables(JSON.parse(stringdata));
+          }
+        };
+    
+        const init = async () => {
+          setLoading(true);
+          setTables([]);
+          const { data, error } = await getTable({ lok_id: cookies.lok_id });
+          handleResponse({ data, error });
+          setLoading(false);
+        };
+        init();
+        //setUsers(usersArray);
+      } else {
+        alert('error update table')
+        //setUsers([]);
+      }
+    });
+
+    // Cleanup the listener
+    return () => unsubscribe();
+  }, []);
+
+  // const sendTableToFirebase = async () => {
+  //   const usersRef = ref(database, 'users'); // "users" is your "table"
+  //   try {
+  //     await push(usersRef, {"name":"faiz","email":"faiz@yahoo.com"});
+  //     alert('Data sent successfully!');
+  //   } catch (error) {
+  //     console.error('Error sending data:', error);
+  //   }
+  // };
   useEffect(() => {
     const _tablebyid = cloneDeep(tableById);
     _tablebyid.mej_status = statusSelect == "1" ? true : false;
@@ -69,13 +117,13 @@ export default function tableList() {
         : setOpen(false);
       setTableById(item);
       setStatusSelect(item.mej_status ? "true" : "false");
-      settxtTitle("Edit Meja");
+      settxtTitle("Edit "+dictionary.table.sidebar[lang]);
       setMode(2);
     } else {
       setReadonly(true);
       setOpen(!open);
       setTableById(item);
-      settxtTitle("Detail Meja");
+      settxtTitle("Detail "+dictionary.table.sidebar[lang]);
       setMode(1);
     }
   }
@@ -89,25 +137,32 @@ export default function tableList() {
         .replaceAll("true", '"Terisi"')
         .replaceAll("false", '"Kosong"');
       setTables(_tables);
-      const init = async () => {
-        const { data, error } = await saveTable(JSON.parse(stringdata));
-        if (error) {
-          alert("Data tidak ditemukan");
-        } else {
-          setLoading(true);
-          setOpen(false);
-          setTables([]);
-          const { data, error } = await getTable({ lok_id: cookies.lok_id });
+      const usersRef = ref(database, 'pos_table'); // "users" is your "table"
+      try {
+        await push(usersRef, JSON.parse(stringdata));
+        const init = async () => {
+          const { data, error } = await saveTable(JSON.parse(stringdata));
           if (error) {
-            alert("Data tidak ditemukan");
+            alert(dictionary.universal.notfound[lang]);
           } else {
-            let stringdata = JSON.stringify(data).replaceAll('"Terisi"', "true").replaceAll('"Kosong"', "false");
-            setTables(JSON.parse(stringdata));
+            setLoading(true);
+            setOpen(false);
+            setTables([]);
+            const { data, error } = await getTable({ lok_id: cookies.lok_id });
+            if (error) {
+              alert(dictionary.universal.notfound[lang]);
+            } else {
+              let stringdata = JSON.stringify(data).replaceAll('"Terisi"', "true").replaceAll('"Kosong"', "false");
+              setTables(JSON.parse(stringdata));
+            }
+            setLoading(false);
           }
-          setLoading(false);
-        }
-      };
-      init();
+        };
+        init();
+      } catch (error) {
+        console.error('Error sending data:', error);
+      }
+      
     },
     [tables]
   );
@@ -126,7 +181,7 @@ export default function tableList() {
   function handleAdd() {
     setTableById({ mej_lok_id: cookies.lok_id, mej_id: -1 });
     setReadonly(false);
-    settxtTitle("Tambah Pajak");
+    settxtTitle(dictionary.universal.add[lang]+" "+dictionary.table.sidebar[lang]);
     setMode(3);
     cookies.role_create.length == 0 && cookies.role_dst.length == 0
       ? setOpen(!open)
@@ -149,7 +204,7 @@ export default function tableList() {
     setItemDisplay(null);
     const { data, error } = await deleteTable({ mej_id: tableId });
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
@@ -157,7 +212,7 @@ export default function tableList() {
       setTableId(-1);
       const { data, error } = await getTable({ lok_id: cookies.lok_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         setTables(data);
       }
@@ -170,14 +225,14 @@ export default function tableList() {
     setItemDisplay(null);
     const { data, error } = await saveTable(JSON.parse(stringdata));
     if (error) {
-      alert("Data tidak ditemukan");
+      alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       setTables([]);
       const { data, error } = await getTable({ lok_id: cookies.lok_id });
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         let stringdata = JSON.stringify(data).replaceAll('"Terisi"', "true").replaceAll('"Kosong"', "false");
         setTables(JSON.parse(stringdata));
@@ -193,7 +248,7 @@ export default function tableList() {
 
     const handleResponse = ({ data, error }) => {
       if (error) {
-        alert("Data tidak ditemukan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
         let stringdata = JSON.stringify(data).replaceAll('"Terisi"', "true").replaceAll('"Kosong"', "false");
         setTables(JSON.parse(stringdata));
@@ -237,10 +292,15 @@ export default function tableList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={handleFilter} value={keyword} label="Meja" />
+                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.table[lang]} />
               </div>
               <IconButton size="md" variant="text" onClick={() => setFilters(true)}>
                 <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
@@ -248,7 +308,7 @@ export default function tableList() {
             </div>
             {!filters.length ? (
               <Typography variant="small" color="gray" className="absolute right-14 bottom-1 text-xs italic">
-                Semua Kategori
+                {dictionary.filter.itemCategory.all[lang]}
               </Typography>
             ) : (
               <div className="px-2 pt-4">
@@ -309,7 +369,7 @@ export default function tableList() {
             <div className="mb-4">
               <InputSimple
                 value={tableById.mej_nama}
-                label="Nama"
+                label={dictionary.dialog.table.name[lang]}
                 name="mej_nama"
                 onChange={handleChange}
                 disabled={readonly}
@@ -318,7 +378,7 @@ export default function tableList() {
             <div className="mb-4">
               <InputSimple
                 value={tableById.mej_kapasitas}
-                label="Kapasitas"
+                label={dictionary.dialog.table.capacity[lang]}
                 name="mej_kapasitas"
                 onChange={handleChange}
                 disabled={readonly}
@@ -330,7 +390,7 @@ export default function tableList() {
                 value={statusSelect}
                 onChange={setStatusSelect}
                 color="teal"
-                label="Kategori"
+                label={dictionary.dialog.table.categories[lang]}
                 disabled={readonly}
               >
                 <Option value="true">Kosong</Option>
@@ -341,7 +401,7 @@ export default function tableList() {
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
-              <span>{mode <= 1 ? "Kembali" : "Batal"}</span>
+              <span>{mode <= 1 ? "Kembali" : dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button
               variant="gradient"
@@ -349,7 +409,7 @@ export default function tableList() {
               onClick={mode <= 1 ? () => handleNewOpen(tableById.mej_id) : saveData}
               className="w-full flex-1"
             >
-              <span>{mode <= 1 ? "Hapus" : "Ubah"}</span>
+              <span>{mode <= 1 ? dictionary.universal.delete[lang] : dictionary.universal.change[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>
@@ -357,16 +417,16 @@ export default function tableList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Table <span className="font-semibold">{tableById.mej_nama}</span> akan dihapus. Apakah anda yakin?
+              {dictionary.table.sidebar[lang]} {dictionary.universal.withname[lang]} <span className="font-semibold">{tableById.mej_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setNewOpen(false)} className="w-full flex-1">
-              <span>Batal</span>
+              <span>{dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button variant="gradient" color="red" onClick={handleDelete} className="w-full flex-1">
-              <span>Hapus</span>
+              <span>{dictionary.universal.delete[lang]}</span>
             </Button>
           </DialogFooter>
         </Dialog>

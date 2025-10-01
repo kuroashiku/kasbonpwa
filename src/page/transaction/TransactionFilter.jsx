@@ -1,5 +1,6 @@
-import { Button, Card, CardBody, Collapse, Drawer, Input, Switch, Typography } from "@material-tailwind/react";
+import { Button, Card, CardBody, Checkbox, Collapse, Drawer, Input, Switch, Typography } from "@material-tailwind/react";
 import { useState } from "react";
+import { CheckCircleIcon } from "@heroicons/react/24/outline";
 import { formatDate, formatRangeDate } from "../../util/formatter";
 import { DayPicker } from "react-day-picker";
 import { cloneDeep, filter } from "lodash";
@@ -10,14 +11,16 @@ import { AdjustmentsVerticalIcon } from "@heroicons/react/24/outline";
 import { useEffect } from "react";
 import { useContext } from "react";
 import { AppContext } from "../../AppContext";
-
+import { dictionary } from "../../constant/appDictionary";
 export default function TransactionFilter({ open = false, onClose = () => {}, onApply = () => {} }) {
-  const { filters } = useContext(AppContext);
+  const { filters,lang } = useContext(AppContext);
   const [showCalendar, setShowCalendar] = useState(false);
   const [isDateRange, setIsDateRange] = useState(false);
   const [filtersTemp, setFiltersTemp] = useState([]);
+  const [checkedIds, setCheckedIds] = useState([]);
   const calendarRef = useRef(null);
-  
+  const arrayfilter=["semua","lunas","belum","tidak"];
+  const [arrayfill, setArrayfill] = useState([]);
   useEffect(() => {
     const handleClickOutside = (event) => {
       if (calendarRef.current && !calendarRef.current.contains(event.target)) {
@@ -80,7 +83,69 @@ export default function TransactionFilter({ open = false, onClose = () => {}, on
     },
     [filtersTemp]
   );
-
+  const handleCheckChange = useCallback(
+      (item) => {
+        const _filters = cloneDeep(filtersTemp);
+        const oldArray = [...checkedIds];
+        const piutIndex = _filters.findIndex((f) => f.key === "categoryPiutang");
+        const indexOfId = oldArray.indexOf(item);
+        let _newfilter = _filters.filter(function (object) {
+          return object.key !== "categoryPiutang";
+        });
+        let dataarr=[];
+        if (indexOfId >= 0) {
+          oldArray.splice(indexOfId, 1);
+          dataarr=oldArray;
+          setCheckedIds(oldArray);
+        } else {
+          dataarr=[...oldArray, item];
+          setCheckedIds([...oldArray, item]);
+        }
+        dataarr.forEach((_item, index) => {
+          const newFilter = FilterItemModel();
+          newFilter.key = "categoryPiutang";
+          newFilter.value = _item;
+          _newfilter.push(newFilter);
+        });
+        setFiltersTemp(_newfilter);
+      },
+      [checkedIds,filtersTemp]
+    );
+    // const handleCheckChangeNew = useCallback(
+    //     (item) => {
+    //       const _filters = cloneDeep(filtersTemp);
+    //       const oldArray = [...checkedIds];
+    //       const piutIndex = _filters.findIndex((f) => f.key === "category");
+    //       //const indexOfId = oldArray.indexOf(item.itm_id);
+    //       if (piutIndex >= 0) {
+    //         oldArray.splice(indexOfId, 1);
+    //         newOldArray.splice(indexOfId, 1);
+    //         setItemCheckId(oldArray);
+    //         setItemCheckName(newOldArray);
+    //       } else {
+    //         setItemCheckId([...oldArray, item.itm_id]);
+    //         setItemCheckName([...newOldArray, formatSentenceCase(item.itm_nama)]);
+    //       }
+    //     },
+    //     [itemCheckId]
+    //   );
+  // const handleCheckFilter = useCallback(
+  //   (item) => {
+  //     const oldArray = [...filters];
+  //     const indexOfId = oldArray.findIndex((a) => a.value == item);
+  //     if (indexOfId >= 0) {
+  //       oldArray.splice(indexOfId, 1);
+  //       setFiltersTemp(oldArray);
+  //     } else {
+  //       const newFilter = FilterItemModel();
+  //       newFilter.key = "category";
+  //       newFilter.value = item;
+  //       setFiltersTemp([...oldArray, newFilter]);
+  //     }
+  //     console.log(filters)
+  //   },
+  //   [filters]
+  // );
   const dateFilter = filtersTemp.find((f) => f.key === "date");
 
   return (
@@ -95,7 +160,7 @@ export default function TransactionFilter({ open = false, onClose = () => {}, on
         <div className="col-span-3 w-10">
           <Input
             color="teal"
-            label="Pilih Tanggal"
+            label={dictionary.universal.choosedate[lang]}
             onChange={() => {}}
             onClick={() => setShowCalendar(true)}
             value={
@@ -146,13 +211,25 @@ export default function TransactionFilter({ open = false, onClose = () => {}, on
           </CardBody>
         </Card>
       </Collapse>
+      <div className="flex flex-col gap-1 mb-2">
+          <div className="flex gap-1">
+            <div className="flex text-sm">
+              Piutang Lunas
+              <Checkbox size={4} color="teal" checked={checkedIds.includes('Cicilan lunas')} onChange={()=>handleCheckChange('Cicilan lunas')}  />
+              Piutang Belum Lunas
+              <Checkbox size={4} color="teal" checked={checkedIds.includes('Cicilan belum lunas')} onChange={()=>handleCheckChange('Cicilan belum lunas')}  />
+              Tidak Punya piutang
+              <Checkbox size={4} color="teal" checked={checkedIds.includes('Tidak pernah mencicil')} onChange={()=>handleCheckChange('Tidak pernah mencicil')}  />
+            </div>
+          </div>
+      </div>
       <Button
         color="teal"
         className="flex items-center justify-center w-full mt-5"
-        onClick={() => onApply(filtersTemp)}
+        onClick={() => {onApply(filtersTemp);setCheckedIds([])}}
       >
         <AdjustmentsVerticalIcon className="w-5 h-5 mr-2" />
-        Terapkan Filter
+        {dictionary.universal.apply[lang]} Filter
       </Button>
     </Drawer>
   );

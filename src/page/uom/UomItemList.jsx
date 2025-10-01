@@ -4,11 +4,11 @@ import SearchNavbar from "../../lib/SearchNavbar";
 import { AdjustmentsVerticalIcon, Bars3Icon } from "@heroicons/react/24/outline";
 import FilterChips from "../../lib/FilterChips";
 import { AppContext } from "../../AppContext";
-import { getItems } from "../../api/Item";
+import { getItems, categoriesItem } from "../../api/Item";
 import { ItemListModel } from "../../model/item";
 import { dictionary } from "../../constant/appDictionary";
 import { useNavigate } from "react-router-dom";
-import UomItemEdit from "./UomItemEdit";
+import UomItemEditnew from "./UomItemEditnew";
 import LoadingOverlay from "../../lib/LoadingOverlay";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
 import UOMItemScrollSm from "./UomItemScrollSm";
@@ -31,16 +31,29 @@ export default function UomItemList() {
   const [page, setPage] = useState(1);
   const [openFilter, setOpenFilter] = useState(false);
   const [clearFilter, setClearFilter] = useState(false);
+  const [closeDialog, setCloseDialog] = useState(false);
+  const [categories, setCategories] = useState([]);
   const handleFilter = (searchKey) => {
     setKeyword(searchKey);
   };
   const openDrawerRight = () => setOpenFilter(true);
-
+  useEffect(() => {
+    const init = async () => {
+      setCategories([]);
+      const { data, error } = await categoriesItem({
+        lok_id: cookies.lok_id,
+      });
+      if (!error) {
+        setCategories(data);
+      }
+    };
+    init();
+  }, []);
   useEffect(() => {
     setItems([]);
     setPage(1);
     setTimeout(() => initData(), 100);
-  }, [keyword, filters]);
+  }, [keyword, filters, submitCount]);
 
   useEffect(() => {
     if (page > 1) initData();
@@ -48,7 +61,7 @@ export default function UomItemList() {
 
   const handleResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setItems(data);
     }
@@ -56,7 +69,7 @@ export default function UomItemList() {
 
   const handleAppendResponse = ({ data, error }) => {
     if (error) {
-      alert("Terjadi Kesalahan");
+      alert(dictionary.universal.erroroccured[lang]);
     } else {
       setItems([...items, ...data]);
     }
@@ -207,6 +220,7 @@ export default function UomItemList() {
   }, [items, navbarRef]);
 
   const handleSelect = (item = ItemListModel()) => {
+    setCloseDialog(false);
     cookies.role_update.length == 0 && cookies.role_dst.length == 0
       ? setSelectedItem(item)
       : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
@@ -215,13 +229,16 @@ export default function UomItemList() {
       ? setSelectedItem(item)
       : null;
   };
-  console.log(selectedItem)
-  if (selectedItem && selectedItem.itm_id>0) {
+  if (selectedItem && selectedItem.itm_id>0 && !closeDialog) {
     return (
-      <UomItemEdit
+      <UomItemEditnew
         item={selectedItem}
         onClose={() => setSelectedItem(null)}
-        onSubmit={() => setSubmitCount(submitCount + 1)}
+        onSubmit={() => {
+          setSubmitCount(submitCount + 1)
+          setSelectedItem(null)
+          setCloseDialog(true);
+        }}
       />
     );
   }
@@ -255,18 +272,28 @@ export default function UomItemList() {
           <Navbar ref={navbarRef} className={`pt-2 px-2 ${!filters.length ? "pb-6" : "pb-4"} relative`} blurred={false}>
             <div className="flex items-center">
               <IconButton variant="text" size="md" onClick={() => setMenuOpen(true)}>
-                <Bars3Icon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <Bars3Icon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Menu
+                  </div>
+                </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={setKeyword} label={"Satuan & Konversi"} />
+                <SearchNavbar onSearch={setKeyword} label={dictionary.search.convertion[lang]} />
               </div>
               <IconButton size="md" variant="text" onClick={openDrawerRight}>
-                <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                <div className="justify-items-center lowercase">
+                  <AdjustmentsVerticalIcon className="h-6 w-6 stroke-2" />
+                  <div style={{fontSize:"10px",padding:"0px"}}>
+                    Filter
+                  </div>
+                </div>
               </IconButton>
             </div>
             {!filters.length ? (
               <Typography variant="small" color="gray" className="absolute right-14 bottom-1 text-xs italic">
-                Semua Kategori
+                {dictionary.filter.itemCategory.all[lang]}
               </Typography>
             ) : (
               <div className="px-2 pt-4">
@@ -277,12 +304,14 @@ export default function UomItemList() {
         </div>
       </div>
       <ItemFilter
-        open={openFilter}
-        onClose={() => setOpenFilter(false)}
-        onCheck={handleCheckFilter}
-        onClear={() => setClearFilter(!clearFilter)}
-        checkedIds={filters.map((i, index) => i.value)}
-      />
+          open={openFilter}
+          onClose={() => setOpenFilter(false)}
+          onCheck={handleCheckFilter}
+          onClear={() => setClearFilter(!clearFilter)}
+          checkedIds={filters.map((i, index) => i.value)}
+          refresh={false}
+          categories={categories}
+        />
     </Fragment>
   );
 }
