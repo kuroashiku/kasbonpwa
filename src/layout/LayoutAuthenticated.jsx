@@ -242,7 +242,7 @@ export function LayoutAuthenticated({ children }) {
 					</div>
 
 					<List className="overflow-y-auto p-4">
-						<Link to={topic.cashier.route} onClick={closeDrawer}  
+						{/* <Link to={topic.cashier.route} onClick={closeDrawer}  
 							className={isPOSAccess?"":"hidden"}
 						>
 							<ListItem selected={pathname === topic.cashier.route} className="px-0">
@@ -250,6 +250,83 @@ export function LayoutAuthenticated({ children }) {
 									<CalculatorIcon className="h-5 w-5" />
 								</ListItemPrefix>
 								{dictionary.cashier.sidebar[lang]}
+							</ListItem>
+						</Link> */}
+						<Link to={topic.masterprojects.route} onClick={closeDrawer} 
+							className={isTransactionAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<DocumentTextIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{dictionary.masterproject.sidebar[lang]}
+							</ListItem>
+						</Link>
+						<Link to={topic.customer.route} onClick={closeDrawer} 
+							className={isMasterCustomerAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<UserGroupIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{"Customer"}
+								<ListItemSuffix>
+									<Chip value={countCustomer} size="sm" variant="ghost" color="blue-gray" className="rounded-full" />
+								</ListItemSuffix>
+							</ListItem>
+						</Link>
+						<Link to={topic.supplier.route} onClick={closeDrawer} 
+							className={isSupplierAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<TruckIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{dictionary.supplier.sidebar[lang]}
+								<ListItemSuffix>
+									<Chip value={countSupplier} size="sm" variant="ghost" color="blue-gray" className="rounded-full" />
+								</ListItemSuffix>
+							</ListItem>
+						</Link> 
+						<Link to={topic.item.route} onClick={closeDrawer} 
+							// className={isTransactionAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<DocumentTextIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{"Produk"}
+							</ListItem>
+						</Link>
+						<Link to={topic.karyawan.route} onClick={closeDrawer} 
+							// className={isTransactionAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<DocumentTextIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{"Karyawan"}
+							</ListItem>
+						</Link>
+						<Link to={topic.shareholder.route} onClick={closeDrawer} 
+							// className={isTransactionAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<DocumentTextIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								{"Share Holder"}
+							</ListItem>
+						</Link>
+
+						{/* <Link to={topic.karyawan.route} onClick={closeDrawer} 
+							className={isTransactionAccess?"":"hidden"}
+						>
+							<ListItem className="px-0">
+								<ListItemPrefix>
+									<DocumentTextIcon className="h-5 w-5" />
+								</ListItemPrefix>
+								Karyawan														
 							</ListItem>
 						</Link>
 						<Link to={topic.transaction.route} onClick={closeDrawer} 
@@ -327,9 +404,9 @@ export function LayoutAuthenticated({ children }) {
 									<Chip value={countSupplier} size="sm" variant="ghost" color="blue-gray" className="rounded-full" />
 								</ListItemSuffix>
 							</ListItem>
-						</Link>
+						</Link> */}
 
-						<Accordion
+						{/* <Accordion
 							open={openParentMenu === topic.stock.id}
 							icon={
 								<ChevronDownIcon
@@ -440,9 +517,9 @@ export function LayoutAuthenticated({ children }) {
 									</Link>
 								</List>
 							</AccordionBody>
-						</Accordion>
+						</Accordion> */}
 
-						<Accordion
+						{/* <Accordion
 							open={openParentMenu === topic.setting.id}
 							icon={
 								<ChevronDownIcon
@@ -475,18 +552,18 @@ export function LayoutAuthenticated({ children }) {
 											{dictionary.setting.general_setting.sidebar[lang]}
 										</ListItem>
 									</Link>
-									{/* <ListItem  className="px-0">
+									<ListItem  className="px-0">
 										<ListItemPrefix>
 											<UsersIcon strokeWidth={3} className="h-4 w-5" />
 										</ListItemPrefix>
 										{dictionary.setting.employee.sidebar[lang]}
-									</ListItem> */}
-									{/* <ListItem  className="px-0">
+									</ListItem>
+									<ListItem  className="px-0">
 										<ListItemPrefix>
 											<ClockIcon strokeWidth={3} className="h-4 w-5" />
 										</ListItemPrefix>
 										{dictionary.setting.shift.sidebar[lang]}
-									</ListItem> */}
+									</ListItem>
 									<Link to={topic.setting.tax.route} onClick={closeDrawer}  
 										className={isMasterPajakAccess?"":"hidden"}
 									>
@@ -525,29 +602,29 @@ export function LayoutAuthenticated({ children }) {
 											{dictionary.setting.user_management.sidebar[lang]}
 										</ListItem>
 									</Link>
-									{/* <Link to={topic.setting.password.route} onClick={closeDrawer}> */}
+									<Link to={topic.setting.password.route} onClick={closeDrawer}>
 										<ListItem className="px-0" onClick={()=>setOpenPassword(true)}>
 											<ListItemPrefix>
 												<ShieldCheckIcon strokeWidth={3} className="h-4 w-5" />
 											</ListItemPrefix>
 											{dictionary.setting.password.sidebar[lang]}
 										</ListItem>
-									{/* </Link> */}
-									{/* <ListItem  className="px-0">
+									</Link>
+									<ListItem  className="px-0">
 										<ListItemPrefix>
 											<PrinterIcon strokeWidth={3} className="h-4 w-5" />
 										</ListItemPrefix>
 										{dictionary.setting.printer.sidebar[lang]}
-									</ListItem> */}
-									{/* <ListItem  className="px-0">
+									</ListItem>
+									<ListItem  className="px-0">
 										<ListItemPrefix>
 											<CircleStackIcon strokeWidth={3} className="h-4 w-5" />
 										</ListItemPrefix>
 										{dictionary.setting.backup.sidebar[lang]}
-									</ListItem> */}
+									</ListItem>
 								</List>
 							</AccordionBody>
-						</Accordion>
+						</Accordion> */}
 						<Link>
 						<ListItem className="px-0 py-3" onClick={()=>setOpenProfil(true)}>
 							<ListItemPrefix>

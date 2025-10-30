@@ -246,7 +246,7 @@ export default function LoginPage() {
           setLoading(false);
         } else {
           enterApp(data);
-          navigate(topic.cashier.route);
+          navigate(topic.masterprojects.route);
         }
       }
     },

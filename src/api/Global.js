@@ -2,6 +2,7 @@ export const RESPONSE_OK = 200;
 export const RESPONSE_NOK = 500;
 export const IS_DEMO = true;
 export const API_HOST = import.meta.env.VITE_API_HOST;
+
 export const httpGet = async (url) => {
     try{
         const headers = {
@@ -137,7 +138,9 @@ export const httpPost = async (url, data) => {
         const headers = {
             'Content-Type': 'application/json'
         }
+        console.log("window token = ",window.token);
         if(window.token){
+            // console.log(window.token);
             headers['Authorization'] = `Bearer ${window.token}`;
         }
         const resp = await fetch(url,{

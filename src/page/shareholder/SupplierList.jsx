@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { getCustomers, saveCustomer, deleteCustomer } from "../../api/Customer";
+import { getSupplier, saveSupplier, deleteSupplier } from "../../api/Supplier";
+import { getShareholder, saveShareholder, deleteShareholder } from "../../api/Shareholder";
 import { AppContext } from "../../AppContext";
 import {
   Button,
@@ -8,49 +9,96 @@ import {
   DialogBody,
   DialogFooter,
   IconButton,
+  Select,
+  Option,
   List,
   ListItem,
   ListItemSuffix,
-  Option,
-  Select,
   Navbar,
   Typography,
-  Chip,
+  Textarea,
 } from "@material-tailwind/react";
 import SearchNavbar from "../../lib/SearchNavbar";
-import { Bars3Icon, TrashIcon, PlusCircleIcon, PencilIcon } from "@heroicons/react/24/outline";
-import { PencilSquareIcon, PhoneIcon, InboxStackIcon } from "@heroicons/react/24/solid";
-import { CustomerListModel } from "../../model/customer";
+import { Bars3Icon, PlusCircleIcon } from "@heroicons/react/24/outline";
+import { HomeIcon, PencilSquareIcon, PhoneIcon,TrashIcon,PencilIcon } from "@heroicons/react/24/solid";
+import { SupplierListModel } from "../../model/supplier";
 import { dictionary } from "../../constant/appDictionary";
+import { useNavigate } from "react-router-dom";
 import LoadingOverlay from "../../lib/LoadingOverlay";
+import { topic } from "../../constant/appTopics";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
 import InputSimple from "../../lib/InputSimple";
+// Import the functions you need from the SDKs you need
+import { initializeApp } from "firebase/app";
+//import { getDatabase } from "firebase/database";
+import { getAnalytics } from "firebase/analytics";
+import { database } from '../../lib/FirebaseConfig';
+import { ref, onValue, push } from "firebase/database";
+// import { database } from "./firebase";
 
-export default function CustomerList() {
-  const { setMenuOpen, lang, cookies } = useContext(AppContext);
+// TODO: Add SDKs for Firebase products that you want to use
+// https://firebase.google.com/docs/web/setup#available-libraries
+
+// Your web app's Firebase configuration
+// For Firebase JS SDK v7.20.0 and later, measurementId is optional
+
+export default function SupplierList() {
+  const { setMenuOpen, filters, currency, setFilters, lang, dataLogin, cookies } = useContext(AppContext);
   const [listPadding, setListPadding] = useState("20px");
   const [loading, setLoading] = useState(true);
-  const [customers, setCustomers] = useState([CustomerListModel()]);
-  const [itemDisplay, setItemDisplay] = useState(CustomerListModel());
+  const [suppliers, setSuppliers] = useState([SupplierListModel()]);
+  const [itemDisplay, setItemDisplay] = useState(SupplierListModel());
   const navbarRef = useRef();
   const [open, setOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [readonly, setReadonly] = useState(false);
-  const [customerById, setCustomerById] = useState({});
-  const [customerId, setCustomerId] = useState(-1);
+  const [supplierById, setSupplierById] = useState({});
+  const [supplierId, setSupplierId] = useState(-1);
   const [txtTitle, settxtTitle] = useState("");
   const [mode, setMode] = useState(0);
   const [keyword, setKeyword] = useState("");
-  const [cus_id,setCus_id] = useState("");
-  const [cus_nama,setCus_nama] = useState("");
-  const [cus_alamat,setCus_alamat] = useState("");
-  const [cus_wa,setCus_wa] = useState("");
-  const [cus_tipe,setCus_tipe] = useState("");
-  const [cus_email,setCus_email] = useState("");
-  const [cus_npwp,setCus_npwp] = useState("");
+  const [users, setUsers] = useState([]);
+  const navigate = useNavigate();
+
   const handleFilter = (searchKey) => {
     setKeyword(searchKey);
   };
+  // const firebaseConfig = {
+  //   apiKey: "AIzaSyB7I2kk2qDH1dTSiXJSDd8sNCuJ28HOvw0",
+  //   authDomain: "kasbon-3afd3.firebaseapp.com",
+  //   databaseURL: "https://kasbon-3afd3-default-rtdb.asia-southeast1.firebasedatabase.app",
+  //   projectId: "kasbon-3afd3",
+  //   storageBucket: "kasbon-3afd3.firebasestorage.app",
+  //   messagingSenderId: "163834327347",
+  //   appId: "1:163834327347:web:cfdbb347cdacf9a28e8e46",
+  //   measurementId: "G-QVFMZLZQ16"
+  // };
+  // const app = initializeApp(firebaseConfig);
+  // const database = getDatabase(app);
+  // Initialize Firebase
+  // const app = initializeApp(firebaseConfig);
+  // const analytics = getAnalytics(app);
+  // const db = getFirestore(app);
+  // useEffect(() => {
+  //   const usersRef = ref(database, "users"); // reference to the "users" node
+
+  //   const unsubscribe = onValue(usersRef, (snapshot) => {
+  //     const data = snapshot.val();
+  //     if (data) {
+  //       const usersArray = Object.entries(data).map(([key, value]) => ({
+  //         id: key,
+  //         ...value,
+  //       }));
+  //       alert(usersArray);
+  //       setUsers(usersArray);
+  //     } else {
+  //       setUsers([]);
+  //     }
+  //   });
+
+    // Cleanup the listener
+  //   return () => unsubscribe();
+  // }, []);
 
   function handleOpen(item, setedit, index) {
     //setitmindex(index)
@@ -60,142 +108,120 @@ export default function CustomerList() {
         ? setOpen(!open)
         : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
         ? setOpen(!open)
-        : cookies.role_update.findIndex((a) => a == "CUST") >= 0
+        : cookies.role_update.findIndex((a) => a == "SUPP") >= 0
         ? setOpen(!open)
         : setOpen(false);
-      setCustomerById(item);
-      settxtTitle("Edit "+dictionary.customer.sidebar[lang]);
+      setSupplierById(item);
+      settxtTitle("Edit Share Holder");
       setMode(2);
     } else {
       setReadonly(true);
       setOpen(!open);
-      setCustomerById(item);
-      settxtTitle("Detail "+dictionary.customer.sidebar[lang]);
+      setSupplierById(item);
+      settxtTitle("Detail Share Holder");
       setMode(1);
     }
   }
   function handleNewOpen(id) {
+    console.log(id);
     cookies.role_delete.length == 0 && cookies.role_dst.length == 0
       ? setNewOpen(!newOpen)
       : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
       ? setNewOpen(!newOpen)
-      : cookies.role_delete.findIndex((a) => a == "CUST") >= 0
+      : cookies.role_delete.findIndex((a) => a == "SUPP") >= 0
       ? setNewOpen(!newOpen)
-      : setOpen(false);
-    console.log(id);
-    setCus_id(id);
-  }
-  function handleAdd() {
-    setCus_id(-1);
-    setCustomerById({ cus_com_id: cookies.com_id, cus_id: -1 });
-    setReadonly(false);
-    settxtTitle(dictionary.universal.add[lang]+" "+dictionary.customer.sidebar[lang]);
-    setMode(3);
-    cookies.role_create.length == 0 && cookies.role_dst.length == 0
-      ? setOpen(!open)
-      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
-      ? setOpen(!open)
-      : cookies.role_create.findIndex((a) => a == "CUST") >= 0
-      ? setOpen(!open)
-      : setOpen(false);
-  }
-
-  function handleChange(evt) {
-    const value = evt.target.type === "checkbox" ? evt.target.checked : evt.target.value;
-    setCustomerById({
-      ...customerById,
-      [evt.target.name]: value,
-    });
+      : setNewOpen(false);
+    setSupplierId(id);
   }
 
   function handleEdit(item) {
-    console.log("masuk sini");
-console.log(item);
-    setCus_id(item.cus_id);
-    setCus_nama(item.cus_nama);
-    setCus_alamat(item.cus_alamat);
-    setCus_wa(item.cus_wa);
-    setCus_tipe(item.tipe);
-    setCus_email(item.email);
-    setCus_npwp(item.npwp);
+    setSupplierById(item);
+
     setReadonly(false);
     setMode(2);
     setOpen(true);
   }
 
+
+  function handleAdd() {
+    setSupplierById({ sup_com_id: cookies.com_id, shareholder_id : -1 });
+    setReadonly(false);
+    settxtTitle("Tambah Share Holder");
+    setMode(3);
+    cookies.role_create.length == 0 && cookies.role_dst.length == 0
+      ? setOpen(!open)
+      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+      ? setOpen(!open)
+      : cookies.role_create.findIndex((a) => a == "SUPP") >= 0
+      ? setOpen(!open)
+      : setOpen(false);
+  }
+
+  function handleChange(evt) {
+    const value = evt.target.value;
+    setSupplierById({
+      ...supplierById,
+      [evt.target.name]: value,
+    });
+  }
+
   const handleDelete = useCallback(async () => {
     setItemDisplay(null);
-    console.log(cus_id);
-    console.log("-------");
-    const { data, error } = await deleteCustomer({ cus_id: cus_id });
+    console.log(supplierId);
+    // return;
+    const { data, error } = await deleteShareholder({ shareholder_id : supplierId });
     if (error) {
       alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setNewOpen(false);
-      setCustomers([]);
-      setCustomerId(-1);
-      const { data, error } = await getCustomers({ com_id: cookies.com_id });
+      setSuppliers([]);
+      setSupplierId(-1);
+      const { data, error } = await getShareholder({ com_id: cookies.com_id });
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
-        setCustomers(data);
+        setSuppliers(data);
       }
       setLoading(false);
     }
-  }, [cus_id]);
+  }, [supplierId]);
 
   const saveData = useCallback(async () => {
     setItemDisplay(null);
-    const { data, error } = await saveCustomer({
-                        // 'cus_com_id' => $data['cus_com_id'],
-                        // 'cus_nama' => $data['cus_nama'],
-                        // 'cus_wa' => $data['cus_wa'],
-                        // 'email' => $data['email'],
-                        // 'npwp' => $data['npwp'],
-                        // 'tipe' => $data['tipe']
-          'cus_id' : cus_id,
-          'cus_com_id' : cookies.com_id,
-          'cus_nama' : cus_nama,
-          'cus_wa' : cus_wa,
-          'cus_alamat' : cus_alamat,
-          'email' : cus_email,
-          'npwp' : cus_npwp,
-          'tipe' : cus_tipe
-
-
-    });
+    const { data, error } = await saveShareholder(supplierById);
     if (error) {
       alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
-      setCustomers([]);
-      const { data, error } = await getCustomers({ com_id: cookies.com_id });
+      setSuppliers([]);
+      const { data, error } = await getShareholder({ com_id: cookies.com_id });
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
-        setCustomers(data);
+        setSuppliers(data);
       }
       setLoading(false);
     }
-  }, [customerById]);
+  }, [supplierById]);
 
   useEffect(() => {
+    if (!cookies.lok_id) {
+      navigate(topic.login.route);
+    }
     const handleResponse = ({ data, error }) => {
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
-        console.log(data);
-        setCustomers(data);
+        setSuppliers(data);
       }
     };
     const init = async () => {
       if (keyword && keyword.length > 1) {
         const orderSearch = setTimeout(async () => {
           setLoading(true);
-          console.log(keyword)
-          const { data, error } = await getCustomers({ com_id: cookies.com_id, key_val: keyword });
+          const { data, error } = await getSupplier({ com_id: cookies.com_id, key_val: keyword });
           handleResponse({ data, error });
           setLoading(false);
         }, TIME_SEARCH_DEBOUNCE);
@@ -204,8 +230,8 @@ console.log(item);
         };
       } else if (!keyword) {
         setLoading(true);
-        setCustomers([]);
-        const { data, error } = await getCustomers({ com_id: cookies.com_id });
+        setSuppliers([]);
+        const { data, error } = await getShareholder({ com_id: cookies.com_id });
         handleResponse({ data, error });
         setLoading(false);
       }
@@ -217,13 +243,13 @@ console.log(item);
     if (navbarRef.current) {
       setListPadding(`${navbarRef.current.offsetHeight + 20}px`);
     }
-  }, [customers, navbarRef]);
+  }, [suppliers, navbarRef]);
 
   return (
     <Fragment>
       {!loading ? null : <LoadingOverlay white />}
       <div className="h-screen-adapt bg-gray-50 overflow-hidden relative">
-        <div className="top-0 inset-x-0 fixed bg-gradient-to-b from-gray-50 h-20" />
+        {/* <div className="top-0 inset-x-0 fixed bg-gradient-to-b from-gray-50 h-20" /> */}
         <div className="p-2 top-0 inset-x-0 fixed z-50 mx-auto desktop:max-w-[60%]">
           <Navbar ref={navbarRef} className={`pt-2 px-2 py-2 relative`} blurred={false}>
             <div className="flex items-center">
@@ -236,7 +262,7 @@ console.log(item);
                 </div>
               </IconButton>
               <div className="mx-2 flex-grow">
-                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.customer[lang]} />
+                <SearchNavbar onSearch={handleFilter} value={keyword} label={dictionary.search.supplier[lang]} />
               </div>
             </div>
           </Navbar>
@@ -244,23 +270,29 @@ console.log(item);
 
         <div className="pb-20 overflow-auto h-full" style={{ paddingTop: listPadding }}>
           {/* <List className="divide-y divide-dashed divide-gray-400">
-            {customers.map((i, index) => {
+            {suppliers.map((i, index) => {
               return (
                 <ListItem key={index} className="flex items-center justify-between px-[3px]">
-                  <div className="w-full pr-2" onClick={() => handleOpen(i, false, index)}>
-                    <div className="info">
-                      <Typography variant="small" color="gray" className="text-[14px] font-medium mb-1">
-                        <b>{i.cus_nama}1</b>
+                  <div className="w-[90%] pr-2 flex-1" onClick={() => handleOpen(i, false, index)}>
+                    <div className="info flex flex-col gap-2">
+                      <Typography variant="small" color="gray" className="text-[14px] font-medium">
+                        <b>{i.sup_nama}</b>
                       </Typography>
-                      {i.cus_wa && (
+                      {i.sup_wa && (
                         <div className="w-max flex gap-1 items-center align-middle px-2 py-[2px] bg-[#cff1cf] rounded-md">
                           <PhoneIcon className="h-[12px] w-[12px]" />
-                          <span className=" text-[13px] font-semibold">{i.cus_wa || ""}</span>
+                          <span className=" text-[13px] font-semibold">{i.sup_wa || ""}</span>
+                        </div>
+                      )}
+                      {i.sup_alamat && (
+                        <div className="w-max max-w-full flex gap-2 items-baseline align-middle px-2 py-1 bg-[#ddf5ff] rounded-md">
+                          <HomeIcon className="h-[12px] min-w-[12px]" />
+                          <span className="flex-5 text-[13px] font-semibold">{i.sup_alamat || ""}</span>
                         </div>
                       )}
                     </div>
                   </div>
-                  <ListItemSuffix>
+                  <ListItemSuffix className="w-[10%]">
                     <IconButton variant="text" color="blue-gray" onClick={() => handleOpen(i, true, index)}>
                       <PencilSquareIcon className="h-5 w-5 text-blue-500" />
                     </IconButton>
@@ -270,10 +302,10 @@ console.log(item);
             })}
           </List> */}
 <div>
-      <h2>Daftar Pemberi Proyek (Customer)</h2>
-{customers.map((item) => (
+      <h2>Daftar Share Holder</h2>
+{suppliers.map((item) => (
   <div 
-    key={item.cus_id} 
+    key={item.sup_id} 
     style={{
       border: "1px solid #ccc",
       padding: "10px",
@@ -285,44 +317,17 @@ console.log(item);
   >
     {/* Bagian info proyek */}
     <div>
-      <h3>{item.cus_nama}</h3>
-      <p><strong>Alamat:</strong> {item.cus_alamat}</p>
-      <p><strong>Tipe:</strong> {item.tipe}</p>
-      <p><strong>No WA:</strong> {item.cus_wa}</p>
-      <p><strong>Email:</strong> {item.email}</p>
-      <p><strong>NPWP:</strong> {item.npwp}</p>
+      <h3>{item.nama_pemilik}</h3>
+      <p><strong>Persentase Kepemilikan:</strong> {item.persentase_kepemilikan}</p>
+      <p><strong>Nominal Investasi:</strong> {item.nominal_investasi}</p>
     </div>
 
     {/* Tombol hapus di kanan */}
-          {/* <div>
-          <IconButton
-                variant="filled"
-                color={itemCheckId.length > 0 ? "red" : "blue-gray"}
-                className={
-                  itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
-                }
-                size="lg"
-                onClick={handleNewOpen}
-              >
-                <PencilIcon className="h-8 w-8 text-black-500" />
-              </IconButton>&nbsp;
-          <IconButton
-                variant="filled"
-                color={itemCheckId.length > 0 ? "red" : "blue-gray"}
-                className={
-                  itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
-                }
-                size="lg"
-                onClick={handleNewOpen}
-              >
-                <TrashIcon className="h-8 w-8 text-black-500" />
-              </IconButton>
-          </div> */}
           <div>
           <IconButton
                 variant="filled"
                 color="blue-gray"
-                // className={
+                // classNam={
                 //   itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
                 // }
                 size="lg"
@@ -333,17 +338,15 @@ console.log(item);
           <IconButton
                 variant="filled"
                 color="blue-gray"
-                // color={itemCheckId.length > 0 ? "red" : "blue-gray"}
                 // className={
                 //   itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
                 // }
                 size="lg"
-                onClick={()=>handleNewOpen(item.cus_id)}
+                onClick={()=>handleNewOpen(item.shareholder_id )}
               >
                 <TrashIcon className="h-8 w-8 text-black-500" />
               </IconButton>
           </div>
-
       </div>
   ))}
     </div>                
@@ -359,73 +362,30 @@ console.log(item);
           <DialogHeader className="text-[20px] text-[#606060]">{txtTitle}</DialogHeader>
           <DialogBody>
             <div className="mb-4">
-  {/* const [cus_nama,setCus_nama] = useState("");
-  const [cus_alamat,setCus_alamat] = useState("");
-  const [cus_wa,setCus_wa] = useState("");
-  const [cus_tipe,setCus_tipe] = useState("");
-  const [cus_email,setCus_email] = useState("");
-  const [cus_npwp,setCus_npwp] = useState(""); */}
               <InputSimple
-                value={cus_nama}
-                label={dictionary.dialog.customer.name[lang]}
-                name="cus_nama"
-                onChange={(e)=>setCus_nama(e.target.value)}
+                value={supplierById.nama_pemilik}
+                label={"Nama Share Holder"}
+                name="nama_pemilik"
+                onChange={handleChange}
                 disabled={readonly}
-                maxlength={30}
               />
             </div>
             <div className="mb-4">
               <InputSimple
-                value={cus_alamat}
-                label={"Alamat Customer"}
-                name="cus_alamat"
-                onChange={(e)=>setCus_alamat(e.target.value)}
+                value={supplierById.persentase_kepemilikan}
+                label={"Presentase Kepemilikan"}
+                name="persentase_kepemilikan"
+                onChange={handleChange}
                 disabled={readonly}
-                maxlength={16}
-              />
-            </div>
-              <div className="mb-4">
-                    <Select
-                      className="h-10 bg-teal-50"
-                      name="cus_tipe"
-                      value={cus_tipe}
-                      label={"Tipe Customer"}
-                      onChange={(val) => setCus_tipe(val)}
-                    >
-                        <Option value="Perorangan">Perorangan</Option>
-                        <Option value="Perusahaan">Perusahaan</Option>
-                      
-                    </Select>
-              </div>
-
-            <div className="mb-4">
-              <InputSimple
-                value={cus_wa}
-                label={dictionary.dialog.customer.wa[lang]}
-                name="cus_wa"
-                onChange={(e)=>setCus_wa(e.target.value)}
-                disabled={readonly}
-                maxlength={16}
               />
             </div>
             <div className="mb-4">
               <InputSimple
-                value={cus_email}
-                label={"Email Customer"}
-                name="cus_email"
-                onChange={(e)=>setCus_email(e.target.value)}
+                value={supplierById.nominal_investasi}
+                label={"Nominal Investasi"}
+                name="nominal_investasi"
+                onChange={handleChange}
                 disabled={readonly}
-                maxlength={16}
-              />
-            </div>
-            <div className="mb-4">
-              <InputSimple
-                value={cus_npwp}
-                label={"NPWP Customer"}
-                name="cus_npwp"
-                onChange={(e)=>setCus_npwp(e.target.value)}
-                disabled={readonly}
-                maxlength={16}
               />
             </div>
           </DialogBody>
@@ -436,7 +396,7 @@ console.log(item);
             <Button
               variant="gradient"
               color={mode <= 1 ? "orange" : "green"}
-              onClick={mode <= 1 ? () => handleNewOpen(customerById.cus_id) : saveData}
+              onClick={mode <= 1 ? () => handleNewOpen(supplierById.sup_id) : saveData}
               className="w-full flex-1"
             >
               <span>{mode <= 1 ? dictionary.universal.delete[lang] : dictionary.universal.confirm[lang]}</span>
@@ -447,7 +407,7 @@ console.log(item);
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              {dictionary.customer.sidebar[lang]} {dictionary.universal.withname[lang]} <span className="font-semibold">{customerById.cus_nama}</span> {dictionary.universal.deleteMessage[lang]}
+              Supplier {dictionary.universal.withname [lang]} <span className="font-semibold">{supplierById.sup_nama}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 

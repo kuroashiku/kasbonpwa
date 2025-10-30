@@ -43,6 +43,10 @@ export const topic = Object.freeze({
         id: 5,
         route: "/supplier"
     },
+    item: {
+        id: 5,
+        route: "/items"
+    },
     stock: {
         id: 6,
         item: {
@@ -143,5 +147,18 @@ export const topic = Object.freeze({
     termservice: {
         id: 98,
         route: "/#/termservice",
+    },
+    masterprojects: {
+        id: 100,
+        route: "/masterproject",
+    },
+    karyawan: {
+        id: 101,
+        route: "/karyawan",
+    },
+    shareholder: {
+        id: 101,
+        route: "/shareholder",
     }
+
 });

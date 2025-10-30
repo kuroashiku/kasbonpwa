@@ -1,15 +1,18 @@
-import { BrowserRouter, Route, Routes, HashRouter } from "react-router-dom";
+import { BrowserRouter, Route, Routes } from "react-router-dom";
 import { AppContext, AppProvider } from "./AppContext";
 import { LayoutAuthenticated } from "./layout/LayoutAuthenticated";
 import LoadingOverlay from "./lib/LoadingOverlay";
 import { topic } from "./constant/appTopics";
-import { Suspense, lazy, useContext } from "react";
+import { Suspense, lazy } from "react";
 import Error404 from "./page/error/Error404";
 import GoogleCallback from "./page/google/GoogleCallback";
-import PrivasiNew from "./page/google/PrivasiNew";
+// import PrivasiNew from "./page/google/PrivasiNew";
 const POS = lazy(() => import("./page/pos/PointOfSales"));
 const POSCalculator = lazy(() => import("./page/pos/POSCalculator"));
 const ItemList = lazy(() => import("./page/item/ItemList"));
+const Karyawan = lazy(() => import("./page/karyawan/SupplierList"));
+const Shareholder = lazy(() => import("./page/shareholder/SupplierList"));
+const ProjectList = lazy(() => import("./page/masterproject/MasterprojectList"));
 const CustomerList = lazy(() => import("./page/customer/CustomerList"));
 const Transaction = lazy(() => import("./page/transaction/TransactionNew"));
 const Statistic = lazy(() => import("./page/statistic"));
@@ -141,6 +144,48 @@ function App() {
                           }
                         >
                           <ItemList />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path={topic.masterprojects.route}
+                      element={
+                        <Suspense
+                          fallback={
+                            <div className="w-fit mx-auto">
+                              <LoadingOverlay />
+                            </div>
+                          }
+                        >
+                          <ProjectList />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path={topic.karyawan.route}
+                      element={
+                        <Suspense
+                          fallback={
+                            <div className="w-fit mx-auto">
+                              <LoadingOverlay />
+                            </div>
+                          }
+                        >
+                          <Karyawan />
+                        </Suspense>
+                      }
+                    />
+                    <Route
+                      path={topic.shareholder.route}
+                      element={
+                        <Suspense
+                          fallback={
+                            <div className="w-fit mx-auto">
+                              <LoadingOverlay />
+                            </div>
+                          }
+                        >
+                          <Shareholder />
                         </Suspense>
                       }
                     />

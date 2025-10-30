@@ -155,6 +155,20 @@ export const dictionary = Object.freeze({
             ID: "Transaksi tidak ditemukan"
         }
     },
+    masterproject: {
+        sidebar: {
+            EN: "Master Projects",
+            ID: "Master Proyek"
+        },
+        search: {
+            EN: "Search Transaction No",
+            ID: "Cari No Transaksi"
+        },
+        noItems: {
+            EN: "No Transaction",
+            ID: "Transaksi tidak ditemukan"
+        }
+    },
     statistic: {
         sidebar: {
             EN: "Statistic",

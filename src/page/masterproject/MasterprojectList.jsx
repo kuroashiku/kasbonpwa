@@ -1,26 +1,29 @@
 import { Fragment, useCallback, useContext, useEffect, useRef, useState } from "react";
-import { getItems, saveItem, deleteItem, categoriesItem, getBoms, saveBom, deleteBom, getRak, saveRak, deleteRak, getItemsBom } from "../../api/Item";
+import { getItems, saveItem, deleteItem, categoriesItem, getBoms, saveBom, deleteBom, getRak, saveRak, deleteRak, getItemsBom, getProjects } from "../../api/Item";
+import { saveProjects, deleteProjects} from "../../api/Masterproject";
+import { getCustomers, saveCustomer, deleteCustomer } from "../../api/Customer";
 import { AppContext } from "../../AppContext";
 import { Button, Checkbox, Dialog, DialogHeader, DialogBody, DialogFooter, IconButton, Input, List, ListItem, Navbar, Option, Switch, Select, Spinner, Typography, } from "@material-tailwind/react"; 
 import SearchNavbar from "../../lib/SearchNavbar"; 
 import { AdjustmentsVerticalIcon, Bars3Icon, TrashIcon, PlusIcon, PlusCircleIcon, PrinterIcon, InboxStackIcon, PencilIcon } from "@heroicons/react/24/outline";
 import FilterChips from "../../lib/FilterChips";
 import { ItemListModel } from "../../model/item";
+// import { MasterProjectListModel } from "../../model/masterproject";
 import { dictionary } from "../../constant/appDictionary";
 import { formatSentenceCase } from "../../util/formatter";
 import LoadingOverlay from "../../lib/LoadingOverlay";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
-import ItemScrollSm from "./ItemScrollSm";
-import ItemScrollMd from "./ItemScrollMd";
+import ItemScrollSm from "./MasterprojectScrollSm";
+import ItemScrollMd from "./MasterprojectScrollMd";
 import InputSimple from "../../lib/InputSimple";
 import InputMoney from "../../lib/InputMoney";
 import ImageUpload from "../../lib/ImageUpload";
-import ItemFilter from "./ItemFilter";
+import ItemFilter from "./MasterprojectFilter";
 import { cloneDeep } from "lodash";
 import { FilterItemModel } from "../../model/filter";
 import BOMItemScroll from "./BOMItemScroll";
 import { convertItemListToCheckout } from "../../model/item";
-import { formatThousandSeparator } from "../../util/formatter";
+import { formatDate, formatRangeDate, formatThousandSeparator } from "../../util/formatter";
 import { CheckCircleIcon } from "@heroicons/react/24/solid";
 import * as XLSX from "xlsx";
 import Barcode from "react-barcode";
@@ -33,6 +36,7 @@ import { DayPicker } from 'react-day-picker';
 import ThermalPrinterEncoder from "thermal-printer-encoder";
 import { format } from "date-fns";
 import { PRINTER_STATE_NONE,PRINTER_STATE_SKIP } from "../../constant/appCommon";
+import { ProjectListModel } from "../../model/masterproject";
 export default function ItemList() {
   const { setMenuOpen, filters, semiDesktopMode, initPrinterBT, desktopMode, setFilters, 
     lang, currency, cookies, rowsPerPage, printerState, setPrinterState, printerLoading,
@@ -41,6 +45,10 @@ export default function ItemList() {
   const [listPadding, setListPadding] = useState("20px");
   const [loading, setLoading] = useState(true);
   const [items, setItems] = useState([ItemListModel()]);
+  const [projects, setProjects] = useState([ProjectListModel()]);
+  const [openDate, setOpenDate] = useState(false);
+  const [dateAwal, setDateAwal] = useState("");
+  const [dateAkhir, setDateAkhir] = useState("");
   const [rakitems, setRakitems] = useState([]);
   const [fullitems, setfullItems] = useState([ItemListModel()]);
   const [newItems, setNewItems] = useState([ItemListModel()]);
@@ -48,6 +56,9 @@ export default function ItemList() {
   const [allItmId, setAllItmId] = useState([]);
   const [itemDisplay, setItemDisplay] = useState(ItemListModel());
   const navbarRef = useRef();
+  const [awalklik,setAwalklik] = useState(false);
+  const [project,setProject] = useState([]);
+  const [customers, setCustomers] = useState([]);
   const [open, setOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [readonly, setReadonly] = useState(false);
@@ -108,84 +119,129 @@ export default function ItemList() {
     setKeywordItem(searchKey);
   };
   const contentRef = useRef(null);
-  const [itemid,setItemid] = useState(-1); 
+//var boskan
+const [projectid, setProjectid] = useState("");
+const [projectname, setProjectname] = useState("");
+const [projectcode, setProjectcode] = useState("");
+const [jenisproject, setJenisproject] = useState("");
+const [nilaiplan, setNilaiplan] = useState("");
+const [tanggalmulai, setTanggalmulai] = useState("");
+const [targetselesai, setTargetselesai] = useState("");
+const [status, setStatus] = useState("");
+const [customerid, setCustomerid] = useState("");
+
+
+
   //////////////////////////mulaikoding///////////////////
   
-  const initData = useCallback(() => {
-    const _categoryFilter = filters.find((f) => f.key === "category");
-    const _categories = [];
-    const _filters = cloneDeep(filters);
-    let _newfilter = _filters.filter(function (object) {
-      return object.key === "category";
-    });
-    let filterProps = {};
-    let strcategory = "";
-    _newfilter.map((i, index) => {
-      strcategory =
-        strcategory + (i.value == "TANPA KATEGORI" ? " itm_kategori IS NULL OR" : ' itm_kategori="' + i.value + '" OR');
-    });
-    if (_categoryFilter) {
-      filterProps = {
-        category: strcategory.slice(0, -2),
-      };
-    }
-    if (keyword && keyword.length > 1) {
-      const orderSearch = setTimeout(async () => {
-        // setPage(1);
-        setLoading(true);
-        const { data, error } = await getItems({
-          lok_id: cookies.lok_id,
-          key_val: keyword,
-          page: page,
-          rows: rowsPerPage,
-          ...filterProps,
-        });
-        if (page <= 1) handleResponse({ data, error });
-        else handleAppendResponse({ data, error });
-        setLoading(false);
-      }, TIME_SEARCH_DEBOUNCE);
-      return () => {
-        clearTimeout(orderSearch);
-      };
-    } else if (!keyword) {
-      const init = async () => {
-        // setItems([]);
-        setLoading(true);
-        // setPage(1);
-        const { data, error } = await getItems({
-          lok_id: cookies.lok_id,
-          page: page,
-          rows: rowsPerPage,
-          ...filterProps,
-        });
-        if (page <= 1) handleResponse({ data, error });
-        else handleAppendResponse({ data, error });
-        setLoading(false);
-      };
-      init();
-    }
-  }, [keyword, filters, page]);
+  const initData = useCallback( async () =>  {
+    // const _categoryFilter = filters.find((f) => f.key === "category");
+    // const _categories = [];
+    // const _filters = cloneDeep(filters);
+    // let _newfilter = _filters.filter(function (object) {
+    //   return object.key === "category";
+    // });
+    // let filterProps = {};
+    // let strcategory = "";
+    // _newfilter.map((i, index) => {
+    //   strcategory =
+    //     strcategory + (i.value == "TANPA KATEGORI" ? " itm_kategori IS NULL OR" : ' itm_kategori="' + i.value + '" OR');
+    // });
+    // if (_categoryFilter) {
+    //   filterProps = {
+    //     category: strcategory.slice(0, -2),
+    //   };
+    // }
+    // if (keyword && keyword.length > 1) {
+    //   const orderSearch = setTimeout(async () => {
+    //     // setPage(1);
+    //     setLoading(true);
+
+    // const handleResponse = ({ data, error }) => {
+    //   if (error) {
+    //     alert(dictionary.universal.notfound[lang]);
+    //   } else {
+    //     console.log(data);
+    //     setProjects(data);
+    //   }
+    // };
+
+    // const handleResponse2 = ({ data2, error2 }) => {
+    //   if (error) {
+    //     alert(dictionary.universal.notfound[lang]);
+    //   } else {
+    //     console.log(data2);
+    //     setCustomers(data2);
+    //   }
+    // };
+
+    const { data, error } = await getProjects({ });
+        console.log(data);
+        // handleResponse({ data, error });
+        setProject(data);
+        console.log(cookies.com_id);
+      //   setCustomers([]);
+      //   // const { data2, error2 } = await getCustomers({ com_id: cookies.com_id});
+      await getCustomers({ com_id: cookies.com_id})
+      .then((res) => {
+        // Pastikan akses data sesuai struktur dari response
+        // kalau hasilnya seperti di screenshot: res.data.data
+        console.log(res.data);
+        setCustomers(res.data);
+      })
+      .catch((err) => {
+        console.error("Error getCustomers:", err);
+      });
+
+      // handleResponse2({ data2, error2 });
+
+        // handleAppendResponse({ data, error });
+        // setLoading(false);
+    //   }, TIME_SEARCH_DEBOUNCE);
+    //   return () => {
+    //     clearTimeout(orderSearch);
+    //   };
+    // } else if (!keyword) {
+    //   const init = async () => {
+    //     // setItems([]);
+    //     setLoading(true);
+    //     // setPage(1);
+    //     const { data, error } = await getItems({
+    //       lok_id: cookies.lok_id,
+    //       page: page,
+    //       rows: rowsPerPage,
+    //       ...filterProps,
+    //     });
+    //     if (page <= 1) handleResponse({ data, error });
+    //     else handleAppendResponse({ data, error });
+    //     setLoading(false);
+    //   };
+    //   init();
+    // }
+  }, []);
 
   useEffect(() => {
-    if (page > 1) initData();
-  }, [page]);
+    console.log("effect 1");
+    // if (page > 1) initData();
+    initData();
+  }, []);
 
-  useEffect(() => {
-    setItems([]);
-    setPage(1);
-    setTimeout(() => initData(), 100);
-  }, [keyword, filters, refreshflag]);
+  // useEffect(() => {
+  //   console.log("effect 2");
+  //   setItems([]);
+  //   setPage(1);
+  //   setTimeout(() => initData(), 100);
+  // }, [keyword, filters, refreshflag]);
 
   const handleResponse = ({ data, error }) => {
     if (error) {
       alert(dictionary.universal.erroroccured[lang]);
     } else {
-      // data.map((i, index) => {
-      //   i.itm_satuan1hpp=i.bom_id_pembentuk>0?i.totalbom:i.itm_satuan1hpp;
-      // });
-      console.log(data);
-      setNewItems(data);
-      setItems(data);
+      data.map((i, index) => {
+        // i.itm_satuan1hpp=i.bom_id_pembentuk>0?i.totalbom:i.itm_satuan1hpp;
+      });
+      // setNewItems(data);
+      setProjects(data);
     }
   };
 
@@ -340,10 +396,10 @@ export default function ItemList() {
 
 
   
-  useEffect(() => {
-    if(printerLoading)
-      setOpenPrint(true);
-  }, [printerLoading]);
+  // useEffect(() => {
+  //   if(printerLoading)
+  //     setOpenPrint(true);
+  // }, [printerLoading]);
   useEffect(() => {
     const _itm_kategori = cloneDeep(itemById);
     _itm_kategori.itm_kategori = categorySelect == "TANPA KATEGORI" ? null : categorySelect;
@@ -351,47 +407,43 @@ export default function ItemList() {
   }, [categorySelect]);
 
   useEffect(() => {
-    const init = async () => {
-      setCategories([]);
-      const { data, error } = await categoriesItem({
-        lok_id: cookies.lok_id,
-        all: "all",
-      });
-      if (!error) {
-        setCategories(data);
-      }
-    };
-    init();
-    const initfilter = async () => {
-      setCategoriesFilter([]);
-      const { data, error } = await categoriesItem({
-        lok_id: cookies.lok_id,
-      });
-      if (!error) {
-        setCategoriesFilter(data);
-      }
-    };
-    initfilter();
-    setClearFilter(true);
+    // const init = async () => {
+    //   setCategories([]);
+    //   const { data, error } = await categoriesItem({
+    //     lok_id: cookies.lok_id,
+    //     all: "all",
+    //   });
+    //   if (!error) {
+    //     setCategories(data);
+    //   }
+    // };
+    // init();
+    // const initfilter = async () => {
+    //   setCategoriesFilter([]);
+    //   const { data, error } = await categoriesItem({
+    //     lok_id: cookies.lok_id,
+    //   });
+    //   if (!error) {
+    //     setCategoriesFilter(data);
+    //   }
+    // };
+    // initfilter();
+    // setClearFilter(true);
   }, []);
 
   function handleEdit(item) {
-    setReadonly(false);
-    cookies.role_update.length == 0 && cookies.role_dst.length == 0
-      ? setOpen(!open)
-      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
-      ? setOpen(!open)
-      : cookies.role_update.findIndex((a) => a == "ITM") >= 0
-      ? setOpen(!open)
-      : setOpen(false);
-    setItemById(item);
-    settxtTitle("Edit Item");
-    setMode(2);
-    setSwitchValueCategory(false);
-    setServices(JSON.parse(item.itm_service_level_satuan1));
-    setCheckedSellable(item.itm_sellable == null ? false : item.itm_sellable);
-    setCheckedBuyable(item.itm_buyable == null ? false : item.itm_buyable);
-    setCategorySelect(item.itm_kategori == null || item.itm_kategori == "" ? "TANPA KATEGORI" : item.itm_kategori);
+    console.log("masuk sini");
+console.log(item.mp_customer_id);
+    setProjectid(item.mp_project_id);
+    setProjectcode(item.mp_project_code);
+    setProjectname(item.mp_project_name);
+    setJenisproject(item.mp_jenis_project);
+    setNilaiplan(item.mp_nilai_plan);
+    setDateAwal(item.mp_tanggal_mulai);
+    setDateAkhir(item.mp_target_selesai);
+    setStatus(item.mp_status);
+    setCustomerid(item.mp_customer_id);
+    setOpen(true);
   }
 
   const printCode = useCallback(async () => {
@@ -453,6 +505,7 @@ export default function ItemList() {
       setOpenPrint(false);
     }
   },[newcodeItems,qrcodebarcode,printerState]);
+
   function handleOpen(item, index) {
     setReadonly(true);
     setOpen(!open);
@@ -507,20 +560,25 @@ export default function ItemList() {
     setOpenBomAdd(true);
   }
 
-  function handleNewOpen(id) {
-    cookies.role_delete.length == 0 && cookies.role_dst.length == 0
-      ? setNewOpen(!newOpen)
-      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
-      ? setNewOpen(!newOpen)
-      : cookies.role_delete.findIndex((a) => a == "ITM") >= 0
-      ? setNewOpen(!newOpen)
-      : setNewOpen(false);
-      console.log(id);
-    setItemid(id);
+  function handleNewOpen(item, setedit, index) {
+    // cookies.role_delete.length == 0 && cookies.role_dst.length == 0
+    //   ? setNewOpen(!newOpen)
+    //   : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+    //   ? setNewOpen(!newOpen)
+    //   : cookies.role_delete.findIndex((a) => a == "ITM") >= 0
+    //   ? setNewOpen(!newOpen)
+    //   : setNewOpen(false);
+      setProjectname(item.mp_project_name);
+      setProjectid(item.mp_project_id);
+      console.log("masuk handle new open");
+      setNewOpen(true);
   }
 
   function handleAdd() {
     setItemById(ItemListModel());
+    console.log("setprojectid -1");
+    setProjectid("-1");
+    setNilaiplan(0);
     setReadonly(false);
     settxtTitle(dictionary.universal.add[lang]+" Item");
     setMode(3);
@@ -554,38 +612,22 @@ export default function ItemList() {
   }
 
   const handleDelete = useCallback(async () => {
-    const uniqueNames = [];
-    const _itemCheckId = [...itemCheckId];
-    let temparray = [];
-    // _itemCheckId.map((i, index) => {
-    //   if (uniqueNames.includes(i) == false) {
-    //     uniqueNames.push(i);
-    //     // temparray = items.filter(function(item) {
-    //     //     return item.itm_id !== i;
-    //     // });
-    //   }
-    // });
-    // await Promise.all(
-    //   uniqueNames.map((i) => {
-      console.log(itemid);
-        deleteItem({ itm_id: itemid });
-    //   })
-    // );
-
-    setItemCheckId([]);
-    setItemCheckName([]);
-    setLoading(true);
-    const { data, error } = await getItems({ lok_id: cookies.lok_id });
+    // setItemDisplay(null);
+    const { data, error } = await deleteProjects({ mp_project_id: projectid });
     if (error) {
       alert(dictionary.universal.notfound[lang]);
     } else {
-      setItems(data);
+      setLoading(true);
       setNewOpen(false);
+    const { data, error } = await getProjects({ });
+        console.log(data);
+        // handleResponse({ data, error });
+        setProject(data);
+        console.log(cookies.com_id);
+
+      setLoading(false);
     }
-    setLoading(false);
-  }, [itemid]);
-
-
+  }, [projectid]);
 
   const handleSetImage = (url) => {
     setItemById({
@@ -733,60 +775,57 @@ export default function ItemList() {
   }
 
   const saveData = useCallback(async () => {
-    setItemDisplay(null);
-    itemById.itm_service_level_satuan1 = JSON.stringify(services);
-    itemById.itm_sellable = checkedSellable == "" ? null : checkedSellable;
-    itemById.itm_buyable = checkedBuyable == "" ? null : checkedBuyable;
-    itemById.itm_lok_id = cookies.lok_id;
-    itemById.itm_id = mode == 3 ? -1 : itemById.itm_id;
-    if (itemById.itm_nama == "") alert("Nama item tidak boleh kosong");
-    else if (itemById.itm_kode == "") alert("Kode item tidak boleh kosong");
-    else if (itemById.itm_satuan1 == "") alert("Satuan item tidak boleh kosong");
-    else {
-      const { data, error } = await saveItem(itemById);
+console.log(projectid);
+console.log(projectcode);
+console.log(projectname);
+console.log(jenisproject);
+console.log(nilaiplan);
+console.log(dateAwal);
+console.log(dateAkhir);
+console.log(status);
+console.log(customerid);
+// return;
+        
+    const { data, error } = await saveProjects({
+
+
+          'mp_project_id' : projectid,
+          'mp_project_code' : projectcode,
+          'mp_project_name' : projectname,
+          'mp_jenis_project' : jenisproject,
+          'mp_nilai_plan' : nilaiplan,
+          'mp_tanggal_mulai' : dateAwal,
+          'mp_target_selesai' : dateAkhir,
+          'mp_status' : status,
+          'mp_customer_id' : customerid
+
+      });
+    if (error) {
+      alert(dictionary.universal.notfound[lang]);
+    } else {
+      setLoading(true);
+      setOpen(false);
+      // setSuppliers([]);
+
+      const { data, error } = await getProjects({  });
       if (error) {
-        alert("Gagal menyimpan");
+        alert(dictionary.universal.notfound[lang]);
       } else {
-        setLoading(true);
-        setOpen(false);
-        setItems([]);
-        setMode(0);
-        const { data: itemData, error } = await getItems({
-          lok_id: cookies.lok_id,
-        });
-        if (error) {
-          alert(error.message);
-        } else {
-          const init = async () => {
-            setCategories([]);
-            const { data, error } = await categoriesItem({
-              lok_id: cookies.lok_id,
-              all: "all",
-            });
-            if (!error) {
-              setCategories(data);
-            }
-          };
-          init();
-          const initfilter = async () => {
-            setCategoriesFilter([]);
-            const { data, error } = await categoriesItem({
-              lok_id: cookies.lok_id,
-            });
-            if (!error) {
-              setCategoriesFilter(data);
-            }
-          };
-          initfilter();
-          setItems(itemData);
-          setfullItems(itemData);
-          setNewItems(itemData);
-          localStorage.removeItem("pos_item");
-        }
-        setLoading(false);
+        setProject(data);
       }
+      setLoading(false);
     }
-  }, [itemById, services, checkedSellable, checkedBuyable, categoriesFilter, mode]);
+  }, [
+  projectid,
+  projectcode,
+  projectname,
+  jenisproject,
+  nilaiplan,
+  dateAwal,
+  dateAkhir,
+  status,
+  customerid
+  ]);
 
   const saveDataBom = useCallback(async () => {
     const _bomList = cloneDeep(bomList);
@@ -885,6 +924,27 @@ export default function ItemList() {
       init();
     }
   }, [pageItem, filters]);
+
+  const onDateChange = useCallback(
+      (date = new Date()) => {
+        // const formatted = date.toISOString().split('T')[0];
+        const formatted = date.toLocaleDateString('en-CA'); // format YYYY-MM-DD versi lokal
+        setDateAwal(formatted);
+        setOpenDate(false);
+      },
+      [dateAwal]
+    );
+
+  const onDateChange2 = useCallback(
+      (date = new Date()) => {
+        // const formatted = date.toISOString().split('T')[0];
+        const formatted = date.toLocaleDateString('en-CA'); // format YYYY-MM-DD versi lokal
+        setDateAkhir(formatted);
+        setOpenDate(false);
+      },
+      [dateAkhir]
+    );
+
 
   const handleAppendResponseItem = ({ data, error }) => {
     if (error) {
@@ -1061,147 +1121,90 @@ export default function ItemList() {
         <Dialog
           open={open}
           handler={handleOpen}
-          dismiss={{ outsidePress: () => setOpen(false) }}
           size={`${desktopMode ? "" : "xxl"}`}
-        >
-          <DialogHeader className="border-b-2 text-lg">{txtTitle}</DialogHeader>
+          dismiss={{
+              enabled: false, // <-- cegah dialog tertutup otomatis
+            }}
+
+          >
+          <DialogHeader className="border-b-2 text-lg">Tambah Project</DialogHeader>
           <DialogBody>
             <div className="max-h-[70vh] overflow-y-auto">
               <div className="mb-6">
-                <ImageUpload
+                {/* <ImageUpload
                   image={itemById.itm_urlimage1}
                   onSuccess={handleSetImage}
                   onRemove={() => handleSetImage(null)}
                   id="upl-image"
                   disabled={readonly}
-                />
+                /> */}
               </div>
-              <div className="mb-4">
-                <InputSimple
-                  value={itemById.itm_kode}
-                  label={dictionary.dialog.item.code[lang]}
-                  onChange={(evt) => handleChange(evt, "itm_kode")}
-                  disabled={readonly}
-                />
-              </div>
-              <div className="mb-4">
-                <InputSimple
-                  value={itemById.itm_nama}
-                  label={dictionary.dialog.item.name[lang]}
-                  onChange={(evt) => handleChange(evt, "itm_nama")}
-                  disabled={readonly}
-                />
-              </div>
-              
-                <div className="grid grid-cols-2 mb-4">
-                  <div className="">
-                    {switchValueCategory ? (
-                      <InputSimple
-                        value={switchValueCategory ? null : itemById.itm_kategori}
-                        label={dictionary.dialog.item.categories[lang]}
-                        onChange={(evt) => handleChange(evt, "itm_kategori")}
-                      />
-                    ) : (
-                      <div>
-                        {
-                          <Select
-                            id="category"
-                            value={`${categorySelect || "TANPA KATEGORI"}`}
-                            onChange={setCategorySelect}
-                            color="teal"
-                            label={dictionary.dialog.item.categories[lang]}
-                            disabled={readonly}
-                          >
-                            {categories.map((p) => (
-                              <Option value={p.itm_kategori} key={p.itm_kategori}>
-                                {p.itm_kategori}
-                              </Option>
-                            ))}
-                          </Select>
-                        }
-                      </div>
-                    )}
-                  </div>
-                  <div className="">
-                    <div className="text-xs ml-2 text-center">{dictionary.dialog.item.newcategories[lang]}</div>
-                    <div className="flex justify-center">
-                      <Switch
-                        color="teal"
-                        disabled={readonly}
-                        onChange={() => setSwitchValueCategory(!switchValueCategory)}
-                      />
-                    </div>
-                  </div>
-                </div>
-              
-              <div className="mb-4">
-                <InputSimple
-                  value={itemById.itm_satuan1}
-                  label={dictionary.dialog.item.unit[lang]}
-                  onChange={(evt) => handleChange(evt, "itm_satuan1")}
-                  disabled={readonly}
-                />
-              </div>
-              {/* <div className="buysell-area flex gap-3 justify-between items-center mb-4">
-                <div
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-1 bg-blue-gray-50 rounded-lg cursor-pointer ${
-                    checkedSellable ? "bg-light-blue-100" : ""
-                  }`}
-                  onClick={() => !readonly && onCheckable(itemById, "sellable")}
-                >
-                  <span>Sellable</span>
-                  <CheckCircleIcon className={`w-8  ${checkedSellable ? "text-blue-500" : "text-gray-300"}`} />
-                </div>
+{/* const [projectname, setProjectname] = useState("");
+const [jenisproject, setJenisproject] = useState("");
+const [nilaiplan, setNilaiplan] = useState("");
+const [tanggalmulai, setTanggalmulai] = useState("");
+const [targetselesai, setTargetselesai] = useState("");
+const [status, setStatus] = useState("");
+const [customerid, setCustomerid] = useState(""); */}
 
-                <div
-                  className={`w-full flex items-center justify-between gap-2 px-3 py-1 bg-blue-gray-50 rounded-lg cursor-pointer ${
-                    checkedBuyable ? "bg-light-green-100" : ""
-                  }`}
-                  onClick={() => !readonly && onCheckable(itemById, "buyable")}
-                >
-                  <span>Buyable</span>
-                  <CheckCircleIcon className={`w-8  ${checkedBuyable ? "text-green-500" : "text-gray-300"}`} />
-                </div>
-              </div> */}
-              {/* <div className="mb-6">
+
+              <div className="mb-4">
+                <InputSimple
+                  value={projectname}
+                  label={"Nama Project"}
+                  onChange={(evt) => setProjectname(evt.target.value)}
+                  disabled={readonly}
+                />
+              </div>
+              <div className="mb-4">
+                <InputSimple
+                  value={projectcode}
+                  label={"Kode Project"}
+                  onChange={(evt) => setProjectcode(evt.target.value)}
+                  disabled={readonly}
+                />
+              </div>
+              
+              
+              <div className="mb-4">
                     <Select
                       className="h-10 bg-teal-50"
-                      name="itm_pakaistok"
-                      value={parseInt(itemById.itm_pakaistok1)}
-                      onChange={handlePakaiStok}
-                      label={dictionary.universal.usestock[lang]}
+                      name="jenisproject"
+                      value={jenisproject}
+                      label={"Jenis Project"}
+                      onChange={(val) => setJenisproject(val)}
                     >
-                      {pakaistok.map((p) => (
-                        <Option value={p.pak_value} key={p.pak_id}>
-                          {p.pak_nama}
-                        </Option>
-                      ))}
+                        <Option value="Kontrak">Kontrak</Option>
+                        <Option value="SPK">SPK</Option>
+                        <Option value="Cleaning">Cleaning</Option>
+                      
                     </Select>
               </div>
-              {itemById.itm_pakaistok1==1?
                 <div className="">
                     
                     <div className="mb-6">
                       <InputMoney
-                        label={dictionary.stock.uom.stock[lang]}
-                        onChange={(evt) => handleChange(evt, "itm_stok")}
-                        value={itemById.itm_stok}
+                        label={"Nilai Plan"}
+                        onChange={(evt) => setNilaiplan(evt.target.value)}
+                        value={nilaiplan}
                       />
 
                     </div>
-                </div>:null
-              } */}
-              {/* {cookies.lok_type == "laundry" ? null : ( */}
-              {services.length<=0?
-              <div>
+                </div>
+              {/* <div> */}
               <div className="mb-6">
-                <InputMoney
-                  currency={currency}
-                  disabled={itemById.bom_id_pembentuk>0?true:readonly}
-                  label={"Harga"}
-                  onChange={(evt) => handleChange(evt, "itm_satuan1hpp")}
-                  value={itemById.itm_satuan1hpp}
-                />
+                    <Select
+                      className="h-10 bg-teal-50"
+                      name="status"
+                      label={"Status"}
+                      value={status}
+                      onChange={(val) => setStatus(val)}
+                    >
+                        <Option value="Quotation">Quotation</Option>
+                        <Option value="On Progress">On Progress</Option>
+                        <Option value="Done">Done</Option>
+                      
+                    </Select>
               </div>
               {/* <div className="mt-6 mb-4">
                 <InputMoney
@@ -1212,44 +1215,59 @@ export default function ItemList() {
                   value={itemById.itm_satuan1hrg}
                 />
               </div> */}
-              </div>:null
-              }
               
-              {cookies.lok_type == "laundry"
-                ? services?.map((i, index) => {
-                    return (
-                      <div className="setlevel-item flex flex-col gap-4 mb-4 p-3 pt-6 bg-blue-gray-50 rounded-md">
-                        <InputMoney
-                          currency={currency}
-                          disabled={readonly}
-                          label={dictionary.dialog.item.cost[lang]}
-                          onChange={(evt) => handleChangeService(evt, "hrg", i, index)}
-                          value={i.hrg}
-                        />
-                        <div className="flex gap-2 justify-between items-center">
-                          <InputSimple
-                            value={i.level}
-                            label={dictionary.dialog.item.level[lang]}
-                            onChange={(evt) => handleChangeService(evt, "level", i, index)}
-                            disabled={readonly}
-                          />
-                          <IconButton
-                            variant="text"
-                            className="bg-orange-500 w-12 h-10"
-                            onClick={() => handleCancleService(i, index, itemById)}
-                          >
-                            <TrashIcon className="h-4 w-4 text-white" />
-                          </IconButton>
-                        </div>
-                      </div>
-                    );
-                  })
-                : null}
-              {cookies.lok_type == "laundry" ? (
-                <Button variant="gradient" color="light-blue" onClick={() => handleAddServices()} className="w-full">
-                  <span>Tambah Services</span>
-                </Button>
-              ) : null}
+              {/* </div>               */}
+              <div className="mb-6">
+                    <Select
+                      className="h-10 bg-teal-50"
+                      name="customerid"
+                      value={customerid} // ← ini penting
+
+                      // value={parseInt(itemById.itm_pakaistok1)}
+                      // onChange={handlePakaiStok}
+                      onChange={(val) => setCustomerid(val)}
+                      label={"Customer"}
+                    >
+                        {customers.map((i, index) => (
+                            <Option key={i.cus_id} value={i.cus_id}>
+                              {i.cus_nama}
+                            </Option>
+                          ))}                      
+                    </Select>
+              </div>
+
+            <div className="mb-4">
+<Button
+  disabled={readonly}
+  variant="outlined"
+  color="blue-gray"
+  onClick={() => {
+    setOpenDate(true);
+    setAwalklik(true);
+  }}  
+  className="w-full flex justify-between items-center text-left border border-blue-gray-200 rounded-lg py-2 px-3 normal-case"
+>
+  <span className={dateAwal ? "text-black" : "text-blue-gray-400"}>
+    {dateAwal || "Pilih tanggal awal"}
+  </span>
+</Button></div>
+            <div className="mb-4">
+<Button
+  disabled={readonly}
+  variant="outlined"
+  color="blue-gray"
+  onClick={() => {
+    setOpenDate(true);
+    setAwalklik(false);
+  }}  
+  className="w-full flex justify-between items-center text-left border border-blue-gray-200 rounded-lg py-2 px-3 normal-case"
+>
+  <span className={dateAkhir ? "text-black" : "text-blue-gray-400"}>
+    {dateAkhir || "Pilih tanggal akhir"}
+  </span>
+</Button>
+            </div>
+
             </div>
           </DialogBody>
 
@@ -1258,7 +1276,7 @@ export default function ItemList() {
               <span>{mode <= 1 ? "Kembali" : dictionary.universal.cancel[lang]}</span>
             </Button>
             <Button
-              className={mode <= 1 ? "hidden" : "block w-full flex-1"}
+              className={"block w-full flex-1"}
               variant="gradient"
               color="green"
               onClick={saveData}
@@ -1271,7 +1289,7 @@ export default function ItemList() {
         <Dialog open={newOpen} handler={handleNewOpen}>
           <DialogBody>
             <div className="text-center my-6">
-              Item {dictionary.universal.withname[lang]} <span className="font-semibold">{itemCheckName.toString()}</span> {dictionary.universal.deleteMessage[lang]}
+              Project {dictionary.universal.withname[lang]} <span className="font-semibold">{projectname}</span> {dictionary.universal.deleteMessage[lang]}
             </div>
           </DialogBody>
 
@@ -1504,6 +1522,19 @@ export default function ItemList() {
           </List>
           </DialogBody>
         </Dialog>
+        <Dialog open={openDate} handler={()=>setOpenDate(false)} size="xs" >
+          <DialogBody>
+            <DayPicker
+              mode="single"
+              // selected={dateFilter ? dateFilter.value : null}
+              onSelect={awalklik ? onDateChange:onDateChange2}
+              captionLayout="dropdown"
+              fromYear={2010}
+              toYear={new Date().getFullYear()}
+            />
+          </DialogBody>
+        </Dialog>
+
         <ItemFilter
           open={openFilter}
           onClose={() => setOpenFilter(false)}
@@ -1595,7 +1626,7 @@ export default function ItemList() {
                 <div className="mx-auto py-20 w-fit">{dictionary.stock.item.noItems[lang]}</div>
               ) : semiDesktopMode ? (
                 <div>
-                  <div className="w-full flex gap-3 text-xs text-gray-700 px-[5%]">
+                  {/* <div className="w-full flex gap-3 text-xs text-gray-700 px-[5%]">
                     <div className="flex gap-1">
                       <div className="w-max py-2 px-2 text-[12px] font-semibold bg-orange-100 rounded-sm"></div>
                       <div>Kode Item</div>
@@ -1608,9 +1639,9 @@ export default function ItemList() {
                       <div className="w-max py-2 px-2 text-[12px] font-semibold bg-blue-100 rounded-sm"></div>
                       <div>Satuan</div>
                     </div>
-                  </div>
-                  <ItemScrollMd
-                    items={items}
+                  </div> */}
+                  {/* <ItemScrollMd
+                    items={projects}
                     onCheck={handleCheckChange}
                     checkedIds={itemCheckId}
                     onOpen={handleOpen}
@@ -1618,14 +1649,14 @@ export default function ItemList() {
                     onLoad={() => setPage(page + 1)}
                     infinite={!keyword}
                     onBom={handleBom}
-                  />
+                  /> */}
                 </div>
               ) : (
                 <div>
                   {/* <div className="w-full flex gap-3 text-xs text-gray-700 px-[5%]">
                     <div className="flex gap-1">
                       <div className="w-max py-2 px-2 text-[12px] font-semibold bg-orange-100 rounded-sm"></div>
-                      <div>Kode Item1</div>
+                      <div>Kode Item</div>
                     </div>
                     <div className="flex gap-1">
                       <div className="w-max py-2 px-2 text-[12px] font-semibold bg-green-100 rounded-sm"></div>
@@ -1650,10 +1681,10 @@ export default function ItemList() {
                     />
                   </List> */}
 <div>
-      <h2>Daftar Produk</h2>
-{items.map((item) => (
+      <h2>Daftar Proyek</h2>
+{project.map((item) => (
   <div 
-    key={item.itm_kode} 
+    key={item.mp_project_id} 
     style={{
       border: "1px solid #ccc",
       padding: "10px",
@@ -1665,11 +1696,14 @@ export default function ItemList() {
   >
     {/* Bagian info proyek */}
     <div>
-      <h3>{item.itm_nama}</h3>
-      <p><strong>Kode:</strong> {item.itm_kode}</p>
-      <p><strong>Kategori:</strong> {item.itm_kategori}</p>
-      <p><strong>Nama:</strong> {item.itm_nama}</p>
-      <p><strong>Harga:</strong> {item.itm_satuan1hpp}</p>
+      <h3>{item.mp_project_name}</h3>
+      <p><strong>Kode:</strong> {item.mp_project_code}</p>
+      <p><strong>Jenis:</strong> {item.mp_jenis_project}</p>
+      <p><strong>Nilai Plan:</strong> Rp {parseFloat(item.mp_nilai_plan).toLocaleString()}</p>
+      <p><strong>Status:</strong> {item.mp_status}</p>
+      <p><strong>Customer:</strong> {item.cus_nama}</p>
+      <p><strong>Mulai:</strong> {item.mp_tanggal_mulai}</p>
+      <p><strong>Selesai:</strong> {item.mp_target_selesai}</p>
     </div>
 
     {/* Tombol hapus di kanan */}
@@ -1677,9 +1711,6 @@ export default function ItemList() {
           <IconButton
                 variant="filled"
                 color="blue-gray"
-                // className={
-                //   itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
-                // }
                 size="lg"
                 onClick={()=>handleEdit(item)}
               >
@@ -1687,9 +1718,12 @@ export default function ItemList() {
               </IconButton>&nbsp;
           <IconButton
                 variant="filled"
-                color="blue-gray"
+                color={itemCheckId.length > 0 ? "red" : "blue-gray"}
+                // className={
+                //   itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
+                // }
                 size="lg"
-                onClick={()=>handleNewOpen(item.itm_id)}
+                onClick={()=>handleNewOpen(item)}
               >
                 <TrashIcon className="h-8 w-8 text-black-500" />
               </IconButton>
@@ -1697,11 +1731,10 @@ export default function ItemList() {
       </div>
   ))}
     </div>                
-
-                </div>
+    </div>
               )}
             </div>
-            <div className="fixed bottom-52 right-4">
+            <div className="fixed bottom-36 right-4">
               <IconButton
                 variant="filled"
                 color="teal"
@@ -1712,7 +1745,7 @@ export default function ItemList() {
                 <PrinterIcon className="h-8 w-8 text-black-500" />
               </IconButton>
             </div>
-            <div className="fixed bottom-36 right-4">
+            <div className="fixed bottom-20 right-4">
               <IconButton variant="filled" color="teal" className="rounded-full" size="lg">
                 {/* <input type="file" id="selectedFile" style={{display:"none"}} onChange={handleFileUpload}/> */}
                 <img
@@ -1723,12 +1756,12 @@ export default function ItemList() {
                 />
               </IconButton>
             </div>
-            <div className="fixed bottom-20 right-4">
+            <div className="fixed bottom-4 right-4">
               <IconButton variant="filled" color="teal" className="rounded-full" size="lg" onClick={() => handleAdd()}>
                 <PlusIcon className="h-8 w-8 text-black-500" />
               </IconButton>
             </div>
-            <div className="fixed bottom-4 right-4">
+            {/* <div className="fixed bottom-4 right-4">
               <IconButton
                 variant="filled"
                 color={itemCheckId.length > 0 ? "red" : "blue-gray"}
@@ -1740,7 +1773,7 @@ export default function ItemList() {
               >
                 <TrashIcon className="h-8 w-8 text-black-500" />
               </IconButton>
-            </div>
+            </div> */}
           </div>
         )}
 

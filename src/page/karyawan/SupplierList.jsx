@@ -1,5 +1,6 @@
 import { Fragment, useCallback, useContext, useEffect, useRef, useState } from "react";
 import { getSupplier, saveSupplier, deleteSupplier } from "../../api/Supplier";
+import { getKaryawan, saveKaryawan, deleteKaryawan } from "../../api/Karyawan";
 import { AppContext } from "../../AppContext";
 import {
   Button,
@@ -23,6 +24,7 @@ import { HomeIcon, PencilSquareIcon, PhoneIcon,TrashIcon,PencilIcon } from "@her
 import { SupplierListModel } from "../../model/supplier";
 import { dictionary } from "../../constant/appDictionary";
 import { useNavigate } from "react-router-dom";
+import { DayPicker } from 'react-day-picker';
 import LoadingOverlay from "../../lib/LoadingOverlay";
 import { topic } from "../../constant/appTopics";
 import { TIME_SEARCH_DEBOUNCE } from "../../constant/appCommon";
@@ -48,6 +50,9 @@ export default function SupplierList() {
   const [suppliers, setSuppliers] = useState([SupplierListModel()]);
   const [itemDisplay, setItemDisplay] = useState(SupplierListModel());
   const navbarRef = useRef();
+  const [dateAwal, setDateAwal] = useState("");
+  const [openDate, setOpenDate] = useState(false);
+  const [awalklik,setAwalklik] = useState(false);
   const [open, setOpen] = useState(false);
   const [newOpen, setNewOpen] = useState(false);
   const [readonly, setReadonly] = useState(false);
@@ -111,26 +116,28 @@ export default function SupplierList() {
         ? setOpen(!open)
         : setOpen(false);
       setSupplierById(item);
-      settxtTitle("Edit Supplier");
+      settxtTitle("Edit Karyawan");
       setMode(2);
     } else {
       setReadonly(true);
       setOpen(!open);
       setSupplierById(item);
-      settxtTitle("Detail Supplier");
+      settxtTitle("Detail Karyawan");
       setMode(1);
     }
   }
   function handleNewOpen(id) {
     console.log(id);
-    cookies.role_delete.length == 0 && cookies.role_dst.length == 0
-      ? setNewOpen(!newOpen)
-      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
-      ? setNewOpen(!newOpen)
-      : cookies.role_delete.findIndex((a) => a == "SUPP") >= 0
-      ? setNewOpen(!newOpen)
-      : setNewOpen(false);
+    // cookies.role_delete.length == 0 && cookies.role_dst.length == 0
+    //   ? setNewOpen(!newOpen)
+    //   : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+    //   ? setNewOpen(!newOpen)
+    //   : cookies.role_delete.findIndex((a) => a == "SUPP") >= 0
+    //   ? setNewOpen(!newOpen)
+    //   : setNewOpen(false);
     setSupplierId(id);
+    setNewOpen(true);
+
   }
 
   function handleEdit(item) {
@@ -141,19 +148,32 @@ export default function SupplierList() {
     setOpen(true);
   }
 
+  const onDateChange = useCallback(
+      (date = new Date()) => {
+        const formatted = date.toLocaleDateString('en-CA'); // format YYYY-MM-DD versi lokal
+        setDateAwal(formatted);
+      setSupplierById((prev) => ({
+          ...prev,
+          tanggal_masuk: formatted,
+        }));
+      setOpenDate(false);
+      },
+      [dateAwal]
+    );
 
   function handleAdd() {
-    setSupplierById({ sup_com_id: cookies.com_id, sup_id: -1 });
+    setSupplierById({ karyawan_id : -1 });
     setReadonly(false);
-    settxtTitle(dictionary.universal.add[lang]+" Supplier");
+    settxtTitle("Tambah Karyawan");
     setMode(3);
-    cookies.role_create.length == 0 && cookies.role_dst.length == 0
-      ? setOpen(!open)
-      : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
-      ? setOpen(!open)
-      : cookies.role_create.findIndex((a) => a == "SUPP") >= 0
-      ? setOpen(!open)
-      : setOpen(false);
+    setOpen(true);
+    // cookies.role_create.length == 0 && cookies.role_dst.length == 0
+    //   ? setOpen(!open)
+    //   : cookies.role_dst.findIndex((a) => a == "ALL") >= 0
+    //   ? setOpen(!open)
+    //   : cookies.role_create.findIndex((a) => a == "SUPP") >= 0
+    //   ? setOpen(!open)
+    //   : setOpen(false);
   }
 
   function handleChange(evt) {
@@ -168,7 +188,7 @@ export default function SupplierList() {
     setItemDisplay(null);
     console.log(supplierId);
     // return;
-    const { data, error } = await deleteSupplier({ sup_id: supplierId });
+    const { data, error } = await deleteKaryawan({ karyawan_id: supplierId });
     if (error) {
       alert(dictionary.universal.notfound[lang]);
     } else {
@@ -176,7 +196,7 @@ export default function SupplierList() {
       setNewOpen(false);
       setSuppliers([]);
       setSupplierId(-1);
-      const { data, error } = await getSupplier({ com_id: cookies.com_id });
+      const { data, error } = await getKaryawan({ com_id: cookies.com_id });
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
@@ -188,14 +208,14 @@ export default function SupplierList() {
 
   const saveData = useCallback(async () => {
     setItemDisplay(null);
-    const { data, error } = await saveSupplier(supplierById);
+    const { data, error } = await saveKaryawan(supplierById);
     if (error) {
       alert(dictionary.universal.notfound[lang]);
     } else {
       setLoading(true);
       setOpen(false);
       setSuppliers([]);
-      const { data, error } = await getSupplier({ com_id: cookies.com_id });
+      const { data, error } = await getKaryawan({ com_id: cookies.com_id });
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
@@ -213,6 +233,7 @@ export default function SupplierList() {
       if (error) {
         alert(dictionary.universal.notfound[lang]);
       } else {
+        console.log(data);
         setSuppliers(data);
       }
     };
@@ -220,7 +241,7 @@ export default function SupplierList() {
       if (keyword && keyword.length > 1) {
         const orderSearch = setTimeout(async () => {
           setLoading(true);
-          const { data, error } = await getSupplier({ com_id: cookies.com_id, key_val: keyword });
+          const { data, error } = await getKaryawan({ });
           handleResponse({ data, error });
           setLoading(false);
         }, TIME_SEARCH_DEBOUNCE);
@@ -230,7 +251,7 @@ export default function SupplierList() {
       } else if (!keyword) {
         setLoading(true);
         setSuppliers([]);
-        const { data, error } = await getSupplier({ com_id: cookies.com_id });
+        const { data, error } = await getKaryawan({  });
         handleResponse({ data, error });
         setLoading(false);
       }
@@ -301,10 +322,10 @@ export default function SupplierList() {
             })}
           </List> */}
 <div>
-      <h2>Daftar Supplier</h2>
+      <h2>Daftar Karyawan</h2>
 {suppliers.map((item) => (
   <div 
-    key={item.sup_id} 
+    key={item.shareholder_id} 
     style={{
       border: "1px solid #ccc",
       padding: "10px",
@@ -316,11 +337,14 @@ export default function SupplierList() {
   >
     {/* Bagian info proyek */}
     <div>
-      <h3>{item.sup_nama}</h3>
-      <p><strong>Alamat:</strong> {item.sup_alamat}</p>
-      <p><strong>No WA:</strong> {item.sup_wa}</p>
-      <p><strong>Email:</strong> {item.sup_email}</p>
-      <p><strong>Jenis:</strong> {item.sup_jenisbarang}</p>
+      <h3>{item.nama_karyawan}</h3>
+      <p><strong>Kode :</strong> {item.kode_karyawan}</p>
+      <p><strong>Jabatan :</strong> {item.jabatan}</p>
+      <p><strong>Gaji Pokok :</strong> {item.gaji_pokok}</p>
+      <p><strong>Tunjangan :</strong> {item.tunjangan}</p>
+      <p><strong>Status BPJS :</strong> {item.status_bpjs}</p>
+      <p><strong>Status Kontrak :</strong> {item.status_kontrak}</p>
+      <p><strong>Tanggal Masuk :</strong> {item.tanggal_masuk}</p>
     </div>
 
     {/* Tombol hapus di kanan */}
@@ -343,7 +367,7 @@ export default function SupplierList() {
                 //   itemCheckId.length > 0 ? "rounded-full pointer-events-auto" : "rounded-full pointer-events-none"
                 // }
                 size="lg"
-                onClick={()=>handleNewOpen(item.sup_id)}
+                onClick={()=>handleNewOpen(item.karyawan_id)}
               >
                 <TrashIcon className="h-8 w-8 text-black-500" />
               </IconButton>
@@ -359,41 +383,69 @@ export default function SupplierList() {
           </div>
         </div>
 
-        <Dialog open={open} handler={handleOpen}>
+        <Dialog
+          open={open}
+          handler={handleOpen}
+          dismiss={{
+              enabled: false, // <-- cegah dialog tertutup otomatis
+            }}
+
+          >
           <DialogHeader className="text-[20px] text-[#606060]">{txtTitle}</DialogHeader>
           <DialogBody>
             <div className="mb-4">
               <InputSimple
-                value={supplierById.sup_nama}
-                label={dictionary.dialog.supplier.name[lang]}
-                name="sup_nama"
+                value={supplierById.nama_karyawan}
+                label={"Nama Karyawan"}
+                name="nama_karyawan"
                 onChange={handleChange}
                 disabled={readonly}
               />
             </div>
             <div className="mb-4">
               <InputSimple
-                value={supplierById.sup_wa}
-                label={dictionary.dialog.supplier.wa[lang]}
-                name="sup_wa"
+                value={supplierById.kode_karyawan}
+                label={"Kode Karyawan"}
+                name="kode_karyawan"
                 onChange={handleChange}
                 disabled={readonly}
               />
             </div>
             <div className="mb-4">
-              <Textarea
-                value={supplierById.sup_alamat}
-                label={dictionary.dialog.supplier.address[lang]}
-                name="sup_alamat"
+              <div className="mb-4">
+                    <Select
+                      className="h-10 bg-teal-50"
+                      name="jabatan"
+                      value={supplierById.jabatan}
+                      label={"Jabatan"}
+                      onChange={(val) =>
+                        setSupplierById({
+                          ...supplierById,
+                          jabatan: val
+                        })
+                      }                    
+                    >
+                        <Option value="Supervisor">Supervisor</Option>
+                        <Option value="Pekerja">Pekerja</Option>
+                        <Option value="Manajer">Manajer</Option>
+                        <Option value="Admin">Admin</Option>
+                    </Select>
+              </div>
+            </div>
+            <div className="mb-4">
+              <InputSimple
+                value={supplierById.gaji_pokok}
+                label={"Gaji Pokok"}
+                name="gaji_pokok"
                 onChange={handleChange}
                 disabled={readonly}
               />
             </div>
             <div className="mb-4">
               <InputSimple
-                value={supplierById.sup_email}
-                label={"Email"}
-                name="sup_email"
+                value={supplierById.tunjangan}
+                label={"Tunjangan"}
+                name="tunjangan"
                 onChange={handleChange}
                 disabled={readonly}
               />
@@ -401,18 +453,49 @@ export default function SupplierList() {
             <div className="mb-4">
                 <Select
                   className="h-10 bg-teal-50"
-                  name="sub_jenisbarang"
-                  value={supplierById.sup_jenisbarang}
-                  label={"Jenis"}
+                  name="status_bpjs"
+                  value={supplierById.status_bpjs}
+                  label={"Status BPJS"}
                   onChange={(val) =>
-                    setSupplierById({ ...supplierById, sup_jenisbarang: val })
+                    setSupplierById({ ...supplierById, status_bpjs: val })
                   }                
                 >
-                    <Option value="BARANG">BARANG</Option>
-                    <Option value="JASA">JASA</Option>
+                    <Option value="Ya">Ya</Option>
+                    <Option value="Tidak">Tidak</Option>
                   
                 </Select>
             </div>
+            <div className="mb-4">
+                <Select
+                  className="h-10 bg-teal-50"
+                  name="status_kontrak"
+                  value={supplierById.status_kontrak}
+                  label={"Status Kontrak"}
+                  onChange={(val) =>
+                    setSupplierById({ ...supplierById, status_kontrak: val })
+                  }                
+                >
+                    <Option value="Tetap">Tetap</Option>
+                    <Option value="Kontrak">Kotrak</Option>
+                    <Option value="Freelance">Freelance</Option>
+                  
+                </Select>
+            </div>
+            <div className="mb-4">
+<Button
+  disabled={readonly}
+  variant="outlined"
+  color="blue-gray"
+  onClick={() => {
+    setOpenDate(true);
+  }}  
+  className="w-full flex justify-between items-center text-left border border-blue-gray-200 rounded-lg py-2 px-3 normal-case"
+>
+  <span className={dateAwal ? "text-black" : "text-blue-gray-400"}>
+    {dateAwal || "Pilih tanggal awal"}
+  </span>
+</Button></div>
+
           </DialogBody>
           <DialogFooter className="flex gap-3 justify-between">
             <Button variant="gradient" color="blue-gray" onClick={() => setOpen(false)} className="w-full flex-1">
@@ -445,6 +528,19 @@ export default function SupplierList() {
             </Button>
           </DialogFooter>
         </Dialog>
+        <Dialog open={openDate} handler={()=>setOpenDate(false)} size="xs" >
+          <DialogBody>
+            <DayPicker
+              mode="single"
+              // selected={dateFilter ? dateFilter.value : null}
+              onSelect={onDateChange}
+              captionLayout="dropdown"
+              fromYear={2010}
+              toYear={new Date().getFullYear()}
+            />
+          </DialogBody>
+        </Dialog>
+
       </div>
     </Fragment>
   );

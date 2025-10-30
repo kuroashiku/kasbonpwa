@@ -8,6 +8,12 @@ export const IS_DEMO = true;
 export const getItems = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/read`, body);
 };
+
+export const getProjects = (body) => {
+    return httpPost(`${API_HOST}/projects`, body);
+};
+
+
 export const getItemsnew = (body=GetItemsReqBody()) => {
     return httpPost(`${API_HOST}/item/readnew`, body);
 };
