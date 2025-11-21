@@ -147,6 +147,7 @@ export const topic = Object.freeze({
     termservice: {
         id: 98,
         route: "/#/termservice",
+<<<<<<< HEAD
     },
     masterprojects: {
         id: 100,
@@ -159,6 +160,8 @@ export const topic = Object.freeze({
     shareholder: {
         id: 101,
         route: "/shareholder",
+=======
+>>>>>>> parent of 290da7b... Post POS new scroll
     }
 
 });

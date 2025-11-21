@@ -6,6 +6,7 @@ import { topic } from "./constant/appTopics";
 import { Suspense, lazy } from "react";
 import Error404 from "./page/error/Error404";
 import GoogleCallback from "./page/google/GoogleCallback";
+<<<<<<< HEAD
 // import PrivasiNew from "./page/google/PrivasiNew";
 const POS = lazy(() => import("./page/pos/PointOfSales"));
 const POSCalculator = lazy(() => import("./page/pos/POSCalculator"));
@@ -13,6 +14,12 @@ const ItemList = lazy(() => import("./page/item/ItemList"));
 const Karyawan = lazy(() => import("./page/karyawan/SupplierList"));
 const Shareholder = lazy(() => import("./page/shareholder/SupplierList"));
 const ProjectList = lazy(() => import("./page/masterproject/MasterprojectList"));
+=======
+import PrivasiNew from "./page/google/PrivasiNew";
+const POS = lazy(() => import("./page/pos/PointOfSales"));
+const POSCalculator = lazy(() => import("./page/pos/POSCalculator"));
+const ItemList = lazy(() => import("./page/item/ItemList"));
+>>>>>>> parent of 290da7b... Post POS new scroll
 const CustomerList = lazy(() => import("./page/customer/CustomerList"));
 const Transaction = lazy(() => import("./page/transaction/TransactionNew"));
 const Statistic = lazy(() => import("./page/statistic"));
@@ -162,6 +169,7 @@ function App() {
                       }
                     />
                     <Route
+<<<<<<< HEAD
                       path={topic.karyawan.route}
                       element={
                         <Suspense
@@ -204,6 +212,8 @@ function App() {
                       }
                     />
                     <Route
+=======
+>>>>>>> parent of 290da7b... Post POS new scroll
                       path={topic.statistic.route}
                       element={
                         <Suspense

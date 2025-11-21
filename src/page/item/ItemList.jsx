@@ -3,7 +3,11 @@ import { getItems, saveItem, deleteItem, categoriesItem, getBoms, saveBom, delet
 import { AppContext } from "../../AppContext";
 import { Button, Checkbox, Dialog, DialogHeader, DialogBody, DialogFooter, IconButton, Input, List, ListItem, Navbar, Option, Switch, Select, Spinner, Typography, } from "@material-tailwind/react"; 
 import SearchNavbar from "../../lib/SearchNavbar"; 
+<<<<<<< HEAD
 import { AdjustmentsVerticalIcon, Bars3Icon, TrashIcon, PlusIcon, PlusCircleIcon, PrinterIcon, InboxStackIcon, PencilIcon } from "@heroicons/react/24/outline";
+=======
+import { AdjustmentsVerticalIcon, Bars3Icon, TrashIcon, PlusIcon, PlusCircleIcon, PrinterIcon, InboxStackIcon } from "@heroicons/react/24/outline";
+>>>>>>> parent of 290da7b... Post POS new scroll
 import FilterChips from "../../lib/FilterChips";
 import { ItemListModel } from "../../model/item";
 import { dictionary } from "../../constant/appDictionary";
